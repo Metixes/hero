@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg id="_Слой_1" data-name="Слой 1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 79.18 79.27">
+  <defs>
+    <style>
+      .cls-1 {
+        fill: #78427f;
+        stroke-width: 0px;
+      }
+
+      .cls-2 {
+        filter: url(#drop-shadow-1);
+        opacity: .42;
+      }
+    </style>
+    <filter id="drop-shadow-1" filterUnits="userSpaceOnUse">
+      <feOffset dx="2" dy="2"/>
+      <feGaussianBlur result="blur" stdDeviation="0"/>
+      <feFlood flood-color="#3b3b3b" flood-opacity=".25"/>
+      <feComposite in2="blur" operator="in"/>
+      <feComposite in="SourceGraphic"/>
+    </filter>
+  </defs>
+  <g class="cls-2">
+    <path class="cls-1" d="m6.13,29.89c-7.78,22.25,3.65,46.3,28.73,49.15,23.41,2.66,46-18.12,44.23-41.89C77.44,15.13,55.76-2.81,33.89.37,12.73,3.44-7.28,28.42,2.59,49.52c3.11,6.64,14.13,4.07,15.2-2.7,1.89-11.89,2.47-23.64,15.67-28.71,12.33-4.73,26.09,5.27,28.48,17.72,2.54,13.23-9.69,26.13-22.68,26.54-14.36.45-29.04-17.31-27.75-31.32.33-3.56-4.21-4.53-5.39-1.16h0Z"/>
+  </g>
+</svg>
