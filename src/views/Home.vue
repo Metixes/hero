@@ -1,22 +1,45 @@
 <template>
   <div class="content">
-    <div class="content-logo">
+    <div ref="refLogo" class="content-logo">
       <svg>
         <use xlink:href="@/assets/sprite.svg#logo" />
       </svg>
     </div>
-    <div class="message-server">
-      <p class="message-server-text">我是宜蘭智能小助理</p>
-      <div class="message-server-bg"></div>
-      <div class="message-server-segment">
-        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 34.7 44.094">
-          <path
-            d="M76.115,134.854v44.094s6.393-16.506,34.7-16.506"
-            transform="translate(-76.115 -134.854)"
-            fill="#e37c8c" />
-        </svg>
+    <div
+      v-scroll-down
+      ref="refChart"
+      class="chat"
+      :style="{ height: chatSize }">
+      <div v-for="msg of messages" :key="msg.value">
+        <div v-if="msg.name === 'server'" class="message-server">
+          <!-- <p class="message-server-text">我是宜蘭智能小助理</p> -->
+          <p class="message-server-text">{{ msg.value }}</p>
+          <div class="message-server-bg"></div>
+          <div class="message-server-segment">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 34.7 44.094">
+              <path
+                d="M76.115,134.854v44.094s6.393-16.506,34.7-16.506"
+                transform="translate(-76.115 -134.854)"
+                fill="#e37c8c" />
+            </svg>
+          </div>
+        </div>
+        <div v-else class="message-server client">
+          <!-- <p class="message-server-text">我今年九歲</p> -->
+          <p class="message-server-text">{{ msg.value }}</p>
+          <div class="message-server-bg"></div>
+          <div class="message-server-segment">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 34.7 44.094">
+              <path
+                d="M481.661,360.982v44.094s-6.393-16.506-34.7-16.506"
+                transform="translate(-446.961 -360.982)"
+                fill="#8898df" />
+            </svg>
+          </div>
+        </div>
       </div>
     </div>
+
     <div class="man">
       <!-- <svg
         xmlns="http://www.w3.org/2000/svg"
@@ -2641,21 +2664,14 @@
         </g>
       </svg>
     </div>
-    <div class="message-server client">
-      <p class="message-server-text">我今年九歲</p>
-      <div class="message-server-bg"></div>
-      <div class="message-server-segment">
-        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 34.7 44.094">
-          <path
-            d="M481.661,360.982v44.094s-6.393-16.506-34.7-16.506"
-            transform="translate(-446.961 -360.982)"
-            fill="#8898df" />
-        </svg>
-      </div>
-    </div>
-    <div class="to-send">
-      <input class="to-send-input" type="text" />
-      <div class="to-send-message">
+
+    <div ref="refToSend" class="to-send">
+      <input
+        v-model="inputValue"
+        @keyup.enter="userInputValue"
+        class="to-send-input"
+        type="text" />
+      <div @click="userInputValue" class="to-send-message">
         <svg
           class=""
           xmlns="http://www.w3.org/2000/svg"
@@ -2708,12 +2724,115 @@
   </div>
 </template>
 
-<script setup></script>
+<script setup>
+import request from "../utils/request.js";
+import { useStore } from "vuex";
+import { ref, reactive, watch, computed } from "vue";
+import { useWindowSize, useElementSize, useScroll } from "@vueuse/core";
+
+const store = useStore();
+const refToSend = ref(null);
+const refLogo = ref(null);
+const refChart = ref(null);
+const messageRef = ref(null);
+const window = useWindowSize();
+const logo = useElementSize(refLogo);
+const toSend = useElementSize(refToSend);
+const message = useElementSize(messageRef);
+const scrollChat = useScroll(refChart);
+
+let counter = ref(0);
+const serverMessages = [
+  "Please enter your name",
+  "Please enter last name",
+  "Please enter your school name",
+  "Please enter your school code",
+  "Please enter your school year",
+  "Please enter your class code",
+];
+const messages = ref([
+  { name: "server", value: serverMessages[counter.value] },
+]);
+const inputValue = ref("");
+const userAuthorizationKeys = [
+  "first_name",
+  "last_name",
+  "school_name",
+  "school_code",
+  "school_year",
+  "class_code",
+];
+const userData = reactive({
+  school_code: "",
+  school_name: "",
+  school_year: "",
+  class_code: "",
+  first_name: "",
+  last_name: "",
+});
+
+const userInputValue = () => {
+  if (!inputValue.value) {
+    return;
+  }
+
+  if (counter.value === userAuthorizationKeys.length) {
+    return;
+  }
+
+  const currentKey = userAuthorizationKeys[counter.value];
+  messages.value.push({ name: "client", value: inputValue.value });
+  userData[currentKey] = inputValue.value;
+  inputValue.value = "";
+  counter.value++;
+  if (!userData.class_code) {
+    messages.value.push({
+      name: "server",
+      value: serverMessages[counter.value],
+    });
+  }
+};
+
+const chatSize = computed(() => {
+  return (
+    window.height.value - logo.height.value - toSend.height.value - 25 + "px"
+  );
+});
+
+const sendUserData = async () => {
+  try {
+    const data = await request.post("auth", {
+      school_code: "123",
+      school_name: "test",
+      school_year: "2222",
+      class_code: "test123",
+      first_name: "tip",
+      last_name: "ppc",
+    });
+    console.log(data);
+  } catch (error) {
+    console.log("error");
+  }
+};
+
+watch(
+  () => counter.value,
+  (n, o) => {
+    if (n === serverMessages.length) {
+      store.dispatch("sendUserData", userData);
+      messages.value = [{ name: "server", value: "Success" }];
+    }
+  }
+);
+</script>
 
 <style scoped lang="scss">
 .content {
+  display: flex;
+  flex-direction: column;
+  position: relative;
   padding: 10px 0 14px;
-  height: 100vh;
+  height: 100svh;
   width: 100%;
   background: url("../assets/bg.jpg");
   background-repeat: no-repeat;
@@ -2733,10 +2852,28 @@
   }
 }
 
+.chat {
+  flex: 1 0 auto;
+  overflow-y: auto;
+  &::-webkit-scrollbar {
+    width: 3px;
+    height: 1px;
+    transition: all 0.5s;
+    z-index: 10;
+  }
+  &::-webkit-scrollbar-track {
+    background-color: white;
+  }
+  &::-webkit-scrollbar-thumb {
+    background-color: #bec4c8;
+    border-radius: 3px;
+  }
+  scroll-behavior: smooth;
+}
+
 .message-server {
   position: relative;
-  margin: 0 auto;
-  margin-top: 20px;
+  margin: 40px auto 0;
   width: 80%;
 
   &-text {
@@ -2773,12 +2910,18 @@
 }
 
 .man {
+  position: absolute;
+  display: flex;
+  top: 0;
+  bottom: 0;
+  right: 0;
+  left: 0;
   max-width: 250px;
   margin: 20px auto 0;
 }
 
 .message-server:is(.client) {
-  margin-top: -36px;
+  margin-top: 40px;
   .message-server-text {
     outline: 5px solid var(--blue);
     color: var(--blue);
@@ -2791,7 +2934,8 @@
 }
 
 .to-send {
-  margin: 40px auto 0;
+  flex: 0 0 auto;
+  margin: 0 auto;
   width: 85%;
   position: relative;
 

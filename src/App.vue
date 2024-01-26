@@ -1,4 +1,5 @@
 <template>
+  <notifications />
   <router-view />
 </template>
 
@@ -17,5 +18,8 @@
   margin: 0;
   padding: 0;
   box-sizing: border-box;
+}
+body {
+  height: 100svh;
 }
 </style>
