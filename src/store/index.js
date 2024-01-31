@@ -1,30 +1,19 @@
 import { createStore } from "vuex";
-import request from "@/utils/request";
-import { useNotification } from "@kyvg/vue3-notification";
-const { notify } = useNotification();
+import { user } from "./modules/user.js";
+
 export default createStore({
-  state: {
-    userData: {},
+  modules: {
+    user,
   },
-  // getters: {},
+  state: () => ({
+    isAuth: localStorage.getItem("token") ? true : false,
+    token: localStorage.getItem("token"), // token string or null
+  }),
+  getters: {
+    checkAuth: (state) => state.isAuth,
+  },
   mutations: {
-    setUserData: (state, object) => (state.userData, object),
+    setIsAuth: (state, boolean) => (state.isAuth, boolean),
   },
-  actions: {
-    async sendUserData({}, userData) {
-      // try {
-      //   const { data } = await request.post("auth", userData);
-
-      //   if (data.error) {
-      //     console.log(data.error.message);
-      //   }
-
-      //   commit("setUserData", data);
-      // } catch (error) {
-      //   console.log("error");
-      // }
-      notify({ type: "success", title: "Success" });
-    },
-  },
-  modules: {},
+  actions: {},
 });
