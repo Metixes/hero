@@ -1435,33 +1435,36 @@ const message = useElementSize(messageRef);
 const scrollChat = useScroll(refChart);
 
 let counter = ref(0);
+
+//const serverMessages = [
+//"Please enter your name",
+//"Please enter last name",
+//"Please enter your school name",
+//"Please enter your school code",
+//"Please enter your school year",
+//"Please enter your class code",
+//];
 const serverMessages = [
-  "Please enter your name",
-  "Please enter last name",
-  "Please enter your school name",
-  "Please enter your school code",
-  "Please enter your school year",
-  "Please enter your class code",
+  "可以告訢我你的全名嗎？",
+  "你來自哪一所學校？",
+  "您念幾年級？",
+  "您念第幾班？",
 ];
 const messages = ref([
   { name: "server", value: serverMessages[counter.value] },
 ]);
 const inputValue = ref("");
 const userAuthorizationKeys = [
-  "first_name",
-  "last_name",
   "school_name",
-  "school_code",
   "school_year",
   "class_code",
+  "first_name",
 ];
 const userData = reactive({
-  school_code: "",
   school_name: "",
   school_year: "",
   class_code: "",
   first_name: "",
-  last_name: "",
 });
 
 const userInputValue = () => {
@@ -1478,7 +1481,7 @@ const userInputValue = () => {
   userData[currentKey] = inputValue.value;
   inputValue.value = "";
   counter.value++;
-  if (!userData.class_code) {
+  if (!userData.first_name) {
     messages.value.push({
       name: "server",
       value: serverMessages[counter.value],
