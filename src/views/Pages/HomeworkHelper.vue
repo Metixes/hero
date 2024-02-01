@@ -495,7 +495,7 @@ watch(
     if (n) {
       setTimeout(() => {
         scrollToBottom();
-      }, 1000);
+      }, 1500);
     }
   }
 );

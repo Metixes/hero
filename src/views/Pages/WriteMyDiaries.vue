@@ -98,6 +98,7 @@
 }
 
 .description {
+  flex: 1 1 auto;
   padding: 2px 0;
   display: flex;
   flex-direction: column;
