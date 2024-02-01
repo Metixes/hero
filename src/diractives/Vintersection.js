@@ -1,11 +1,12 @@
 export default {
   mounted(el, binding) {
+    console.log("el", el);
+    console.log("binding", binding);
     const options = {
       rootMargin: "0px",
       threshold: 0.5,
     };
     const callback = (entries, observer) => {
-      // console.log("scroolllll!!!!!!!");
       if (entries[0].isIntersecting) {
         binding.value();
       }

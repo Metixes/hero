@@ -39,7 +39,7 @@
     color: #787b7b;
     background-color: #e58f7e;
 
-    font-family: "Roboto";
+    font-family: "DFYuanMedium";
     font-size: 14px;
 
     &::-webkit-scrollbar {

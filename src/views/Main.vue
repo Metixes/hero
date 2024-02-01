@@ -61,7 +61,7 @@ const setTitle = ({ title, chiTitle }) => {
 }
 
 .tab-header {
-  margin-left: 10px;
+  margin-left: 25px;
   display: flex;
   flex-direction: column;
   gap: 5px;
