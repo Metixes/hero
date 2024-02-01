@@ -64,7 +64,7 @@ const setTitle = ({ title, chiTitle }) => {
   margin-left: 10px;
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 5px;
 
   &-title {
     color: #5c6b8a;
@@ -81,6 +81,20 @@ const setTitle = ({ title, chiTitle }) => {
   height: 100%;
 
   overflow: auto;
+
+  &::-webkit-scrollbar {
+    width: 3px;
+    height: 1px;
+    transition: all 0.5s;
+    z-index: 10;
+  }
+  &::-webkit-scrollbar-track {
+    background-color: white;
+  }
+  &::-webkit-scrollbar-thumb {
+    background-color: #bec4c8;
+    border-radius: 3px;
+  }
 }
 
 .scale-enter-active,

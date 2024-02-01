@@ -21,19 +21,24 @@
             今天是放假的第一天，早上我去學校領新書和成績單（語文99，數學100）。語文一道題答錯了，所以沒有得到100分。我很傷心，因為這次是這學期最後一次考試。
           </p>
         </div>
-        <span class="chats-btn">From: 中文</span>
+        <div class="chats-options">
+          <span class="chats-btn">From: 中文</span>
+        </div>
       </div>
       <div class="chats-user chat">
         <div class="chats-wrapper user-inner">
           <p class="chats-user-text">
             Today is the first day of the holiday. I went to school in the
             morning to pick up my new book and report card (Chinese 99,
-            Mathematics 100). I got a Chinese question wrong, so I didn't get
-            100 points. I am very sad because this is the last exam of this
-            semester.
+            Mathematics 100).
           </p>
         </div>
-        <span class="chats-btn">From: 中文</span>
+        <div class="chats-options">
+          <svg class="chats-icon">
+            <use href="@/assets/symbol-defs.svg#icon-horn" />
+          </svg>
+          <span class="chats-btn">To: English</span>
+        </div>
       </div>
     </div>
     <div class="voice-message">
@@ -41,14 +46,15 @@
         <use href="@/assets/symbol-defs.svg#icon-voices" />
       </svg>
       <div class="description">
-        <h3 class="description-title">請用語音輸入中文日誌</h3>
+        <h3 class="description-title">請念出翻譯後的英文日誌後上傳</h3>
         <div class="description-timeline">
           <svg class="description-timeline-line">
             <use href="@/assets/symbol-defs.svg#icon-voice-line" />
           </svg>
-          <span class="description-timeline-time">00:52</span>
+          <span class="description-timeline-time">00:43</span>
         </div>
       </div>
+      <span class="voice-message-submit">提交</span>
     </div>
   </section>
 </template>
@@ -82,6 +88,13 @@
     border-radius: 50%;
     background-color: #8898df;
   }
+
+  &-submit {
+    padding: 10px 20px;
+
+    border-radius: 18px;
+    background-color: #8898df;
+  }
 }
 
 .description {
@@ -94,6 +107,7 @@
     font-family: "HanWangYenHeavy";
     color: #807afa;
   }
+
   &-timeline {
     display: flex;
     align-items: center;
@@ -103,6 +117,7 @@
       width: 100px;
       height: 18px;
     }
+
     &-time {
       font-family: "OpenSans";
       font-weight: 600;
@@ -113,7 +128,7 @@
 
 .chat {
   position: relative;
-  padding: 40px 20px 45px 20px;
+  padding: 32px 20px 45px 20px;
 }
 
 .chats {
@@ -129,10 +144,12 @@
       #df637e 69%,
       #de567f 100%
     );
+
     &-text {
       color: #787b7b;
     }
   }
+
   &-user {
     background-color: #8fbde6;
 
@@ -143,35 +160,53 @@
 
   &-wrapper {
     overflow-y: scroll;
+    scroll-behavior: smooth;
 
     &::-webkit-scrollbar {
       display: none;
     }
   }
 
-  &-btn {
+  &-options {
+    display: flex;
+    align-items: center;
+    gap: 5px;
     position: absolute;
-    padding: 5px 20px;
     bottom: 10px;
     right: 10px;
+  }
+
+  &-icon {
+    padding: 4px;
+    width: 24px;
+    height: 24px;
+
+    border-radius: 50%;
+    background-color: #8898df;
+  }
+
+  &-btn {
+    padding: 5px 20px;
 
     border: 0.5px solid var(--white);
     border-radius: 18px;
     color: var(--white);
+    cursor: default;
   }
 }
+
 .chats-wrapper {
   min-height: 50px;
   max-height: 130px;
 }
+
 .ai-inner {
   min-height: 50px;
-  // max-height: 100px;
-  height: 13vh;
+  height: 11svh;
 }
+
 .user-inner {
   min-height: 50px;
-  // max-height: 130px;
-  height: 15vh;
+  height: 13svh;
 }
 </style>

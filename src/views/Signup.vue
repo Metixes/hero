@@ -1514,6 +1514,8 @@ const signup = async () => {
     store.commit("setIsAuth", true);
 
     localStorage.setItem("token", data.data.token);
+
+    router.push("/dashboard-links");
   } catch (error) {
     messages.value = [{ name: "server", value: error.message }];
   }

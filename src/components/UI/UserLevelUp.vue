@@ -9,6 +9,9 @@
           <span class="user-info-class">宜蘭小學 三年級</span>
         </div>
         <div class="user-points">
+          <svg class="user-points-icon">
+            <use href="@/assets/symbol-defs.svg#icon-coin" />
+          </svg>
           <span class="user-points-text">我的金幣</span>
           <span class="user-points-coins">{{
             store.state.user.userData.rating.stars
@@ -26,8 +29,10 @@
           gapPosition="top"
           :strokeWidth="4"
           :format="() => returnUserLevel()"
-          direction="rtl"
-        />
+          direction="rtl" />
+        <svg class="user-level-icon">
+          <use href="@/assets/symbol-defs.svg#icon-achieve" />
+        </svg>
       </div>
     </div>
     <div class="autocomplete">
@@ -35,8 +40,7 @@
       <a-segmented
         class="autocomplete-tab"
         v-model:value="tabValue"
-        :options="data"
-      >
+        :options="data">
         <template #label="{ data }">
           <div style="padding: 4px 4px">
             <div>{{ data.label }}</div>
@@ -80,7 +84,7 @@ const data = reactive([
 const tabValue = ref("text");
 
 const returnUserLevel = () => {
-  return [h("span", userRating.value), h("span", "level")];
+  return [h("span", userRating.value), h("span", "LEVEL")];
 };
 
 onClickOutside(modal, () => {
@@ -153,17 +157,54 @@ watch(
   &-class {
     font-family: "DFHei";
     color: var(--white);
-    // font-size: 22px;
+  }
+}
+
+.user-level {
+  position: relative;
+
+  &:deep(.ant-progress-text) span:nth-child(1) {
+    font-size: 22px;
+  }
+
+  &-icon {
+    width: 50px;
+    height: 50px;
+    position: absolute;
+    bottom: 22px;
+    right: -22px;
   }
 }
 
 .user-points {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 0 10px;
+  margin-left: 20px;
+  position: relative;
+
   font-family: "HanWangYenHeavy";
+  color: #8898df;
+
+  border-radius: 18px;
   color: var(--white);
+  background-color: #dfd1c6;
+
+  &-icon {
+    position: absolute;
+    width: 40px;
+    height: 40px;
+    left: -30px;
+    top: -12px;
+  }
+
   &-text {
+    color: #8898df;
   }
 
   &-coins {
+    color: #8898df;
   }
 }
 
