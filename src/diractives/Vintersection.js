@@ -5,6 +5,7 @@ export default {
       threshold: 0.5,
     };
     const callback = (entries, observer) => {
+      // console.log("scroolllll!!!!!!!");
       if (entries[0].isIntersecting) {
         binding.value();
       }

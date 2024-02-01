@@ -16,8 +16,9 @@ export default createStore({
     checkAppLoaded: (state) => state.isAppLoaded,
   },
   mutations: {
-    setIsAuth: (state, boolean) => (state.isAuth, boolean),
+    setIsAuth: (state, boolean) => (state.isAuth = boolean),
     setAppLoaded: (state, boolean) => (state.applicationLoaded = boolean),
+    setToken: (state, string) => (state.token = string),
   },
   actions: {},
 });

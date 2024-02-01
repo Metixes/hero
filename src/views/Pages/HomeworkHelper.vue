@@ -1,14 +1,13 @@
 <template>
   <section class="homework-section">
     <div v-if="!dataLoaded" class="loader-container"><Loader /></div>
-    <div v-if="dataLoaded" v-scroll-down class="chat-container">
+    <div v-if="dataLoaded" class="chat-container">
       <div v-intersection="getHistoryOnScroll" style="height: 1px"></div>
       <div v-for="(message, index) in chatMessages" :key="index">
         <div
           :class="[
             message.side === 'server' ? 'server-message' : 'user-message',
-          ]"
-        >
+          ]">
           <div class="avatar">
             <svg width="30" height="30">
               <use
@@ -16,8 +15,7 @@
                   message.side === 'server'
                     ? getChatIcon('icon-logo-icon')
                     : getChatIcon('icon-fmale')
-                "
-              ></use>
+                "></use>
             </svg>
           </div>
           <span v-if="!message.isLoaded" class="message-loader"
@@ -26,8 +24,7 @@
           <div v-else class="message-content">
             <figure
               v-if="message.contentType === 'audio' && message.audioContent"
-              class="message-audio"
-            >
+              class="message-audio">
               <audio :src="message.audioContent" controls></audio>
             </figure>
             <p v-else>{{ message.content }}</p>
@@ -46,8 +43,7 @@
       :class="[
         { disabled: !dataLoaded || !chattingAbility },
         'input-container',
-      ]"
-    >
+      ]">
       <div class="uploads">
         <button @click="cameraOpened = true">
           <svg width="25" height="25">
@@ -74,8 +70,7 @@
             svgNameActive="icon-stop"
             svgWidth="24"
             svgHeight="24"
-            @getVoice="getRecord"
-          />
+            @getVoice="getRecord" />
         </div>
       </div>
     </div>
@@ -83,8 +78,7 @@
     <VueCamera
       v-if="cameraOpened"
       @close="cameraOpened = false"
-      @snapshot="getPhoto"
-    />
+      @snapshot="getPhoto" />
   </section>
 </template>
 
@@ -161,6 +155,16 @@ const cameraOpened = ref(false);
 //user`s text message
 const textMessage = ref("");
 
+// scroll to bottom of chat-content
+
+const scrollToBottom = () => {
+  console.log("scroll!!!!!!!!!!!!! to top");
+  console.log(document.querySelector("body"));
+  const chatElement = document.querySelector(".chat-container");
+  console.log(chatElement);
+  chatElement.scrollTop = chatElement.scrollHeight;
+};
+
 /**
  * getting image file from input image and send in sendMedia switcher
  * @returns void
@@ -214,6 +218,7 @@ const startConversation = async () => {
 
     storeUserChat(chatMessages.at(-1));
     updateHomeworkAbility(data.caller_id);
+    scrollToBottom();
   } catch (error) {
     console.log(error);
   }
@@ -229,6 +234,7 @@ const continueConversation = async (data, contentType = "text") => {
       //MABYE??
       await getToken();
       await startConversation();
+      return;
     }
 
     let dataToSend = data;
@@ -285,6 +291,7 @@ const continueConversation = async (data, contentType = "text") => {
 
     chatMessages.at(-2).content = continueConversation.requested_text;
     storeUserChat(chatMessages.at(-2));
+    scrollToBottom();
   } catch (error) {
     console.log(error);
   }
@@ -481,6 +488,17 @@ const updateHomeworkAbility = async (aiConversationId = null) => {
     console.log("Update homeworkAbility failed: ", error.message);
   }
 };
+
+watch(
+  () => dataLoaded.value,
+  (n, o) => {
+    if (n) {
+      setTimeout(() => {
+        scrollToBottom();
+      }, 1000);
+    }
+  }
+);
 
 /**
  * getting data on page load

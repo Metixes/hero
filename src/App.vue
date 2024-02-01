@@ -55,7 +55,11 @@ onBeforeMount(async () => {
   isLoaded.value = false;
   const token = localStorage.getItem("token");
 
-  if (!token) router.push("/signup");
+  if (!token) {
+    router.push("/signup");
+    isLoaded.value = true;
+    return;
+  }
 
   const response = await login(token);
 

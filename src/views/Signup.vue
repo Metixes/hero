@@ -1514,6 +1514,7 @@ const signup = async () => {
 
     store.commit("user/setUserData", data.data);
     store.commit("setIsAuth", true);
+    store.commit("setToken", data.data.token);
 
     localStorage.setItem("token", data.data.token);
 
