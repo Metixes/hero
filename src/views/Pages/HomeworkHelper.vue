@@ -1,7 +1,8 @@
 <template>
   <section class="homework-section">
     <div v-if="!dataLoaded" class="loader-container"><Loader /></div>
-    <div v-else v-scroll-down class="chat-container">
+    <div v-if="dataLoaded" v-scroll-down class="chat-container">
+      <div v-intersection="getHistoryOnScroll" style="height: 1px"></div>
       <div v-for="(message, index) in chatMessages" :key="index">
         <div
           :class="[
@@ -23,19 +24,30 @@
             ><a-spin size="small"
           /></span>
           <div v-else class="message-content">
-            <p v-if="message.contentType === 'text'">{{ message.content }}</p>
             <figure
-              v-if="message.contentType === 'audio'"
+              v-if="message.contentType === 'audio' && message.audioContent"
               class="message-audio"
             >
-              <audio :src="message.content" controls></audio>
+              <audio :src="message.audioContent" controls></audio>
             </figure>
+            <p v-else>{{ message.content }}</p>
             <span class="message-send-time">{{ message.time }}</span>
           </div>
         </div>
       </div>
     </div>
-    <div :class="[{ disabled: !dataLoaded }, 'input-container']">
+    <div v-if="dataLoaded" class="hw-remaining">
+      <p v-if="!chattingAbility">
+        Will be available after: {{ remainingTimeDay }}
+      </p>
+      <p v-else>Time left: {{ remainingTime90 }}</p>
+    </div>
+    <div
+      :class="[
+        { disabled: !dataLoaded || !chattingAbility },
+        'input-container',
+      ]"
+    >
       <div class="uploads">
         <button @click="cameraOpened = true">
           <svg width="25" height="25">
@@ -67,6 +79,7 @@
         </div>
       </div>
     </div>
+
     <VueCamera
       v-if="cameraOpened"
       @close="cameraOpened = false"
@@ -76,14 +89,22 @@
 </template>
 
 <script setup>
-import { ref, reactive, onMounted } from "vue";
+import { ref, reactive, onMounted, onUnmounted, watch } from "vue";
 import { useFileDialog } from "@vueuse/core";
+import { useStore } from "vuex";
 import Loader from "@/components/UI/Loader.vue";
 import VueCamera from "@/components/camera/VueCamera.vue";
 import VoiceRecorder from "@/components/recorder/VoiceRecorder.vue";
-
+import request from "@/config/request.js";
 import { airpetFetch } from "@/utils/airpetFetcher.js";
 import { getTime } from "@/utils/getTime.js";
+
+import {
+  timeUntilEndOfDay,
+  timeUntil90Minutes,
+} from "../../utils/functionsUtils/homework.js";
+
+const emits = defineEmits("childComponentEvent");
 
 const TEST_USER = {
   subject: "數學",
@@ -92,6 +113,16 @@ const TEST_USER = {
   student_name: "yunfei ydes@ip",
   action: "Start",
 };
+
+const store = useStore();
+
+/**
+ * This blok for HomeworkHelper
+ */
+const REMAINING_MULTIPLIER = 90;
+const remainingTime90 = ref("");
+const remainingTimeDay = ref("");
+//END HomeworkHelper BLOCK
 
 // if data loading (onMounted fn works) show loader
 const dataLoaded = ref(false);
@@ -109,6 +140,13 @@ const CONVERSATION_SESSION_ID = ref(null);
  * possible for current user
  */
 const chattingAbility = ref(false);
+
+/**
+ * if getChattingAbilityAndHistory() crashed it needs
+ * to set tis variable to false
+ * user still can chat with ai, but without history saving
+ */
+let canSaveChatHistory = true;
 
 //conversation timeline
 const conversationsStartedAt = ref(0);
@@ -173,6 +211,9 @@ const startConversation = async () => {
     chatMessages.at(-1).content = data.response;
     chatMessages.at(-1).isLoaded = true;
     chatMessages.at(-1).time = getTime();
+
+    storeUserChat(chatMessages.at(-1));
+    updateHomeworkAbility(data.caller_id);
   } catch (error) {
     console.log(error);
   }
@@ -184,7 +225,7 @@ const startConversation = async () => {
  */
 const continueConversation = async (data, contentType = "text") => {
   try {
-    if (!CONVERSATION_SESSION_ID) {
+    if (!CONVERSATION_SESSION_ID.value) {
       //MABYE??
       await getToken();
       await startConversation();
@@ -205,7 +246,8 @@ const continueConversation = async (data, contentType = "text") => {
       chatMessages.push({
         side: "client",
         title: "",
-        content: data.audioUrl,
+        content: "",
+        audioContent: data.audioUrl,
         contentType: "audio",
         isLoaded: true,
         time: getTime(),
@@ -239,6 +281,10 @@ const continueConversation = async (data, contentType = "text") => {
     chatMessages.at(-1).content = continueConversation.response;
     chatMessages.at(-1).isLoaded = true;
     chatMessages.at(-1).time = getTime();
+    storeUserChat(chatMessages.at(-1));
+
+    chatMessages.at(-2).content = continueConversation.requested_text;
+    storeUserChat(chatMessages.at(-2));
   } catch (error) {
     console.log(error);
   }
@@ -268,6 +314,7 @@ const imageTextExplanation = async (data) => {
     chatMessages.at(-1).content = extractText.extracted_text;
     chatMessages.at(-1).isLoaded = true;
     chatMessages.at(-1).time = getTime();
+    storeUserChat(chatMessages.at(-1));
 
     chatMessages.push({
       side: "server",
@@ -290,6 +337,7 @@ const imageTextExplanation = async (data) => {
     chatMessages.at(-1).content = explanation.response;
     chatMessages.at(-1).isLoaded = true;
     chatMessages.at(-1).time = getTime();
+    storeUserChat(chatMessages.at(-1));
   } catch (error) {
     console.log(error);
   }
@@ -336,6 +384,7 @@ const getToken = async () => {
       username: process.env.VUE_APP_AIRPET_USERNAME,
       password: process.env.VUE_APP_AIRPET_PASSWORD,
     });
+
     TOKEN.value = data.access;
   } catch (error) {
     console.log(error);
@@ -346,8 +395,18 @@ const getToken = async () => {
  * save user conversation with ai to local storage or in database???
  * @returns void
  */
-const storeUserChat = async () => {
-  localStorage.setItem("user_chat", JSON.stringify(chatMessages));
+const storeUserChat = async (chatData) => {
+  try {
+    if (!canSaveChatHistory) return;
+
+    const { data } = await request.post("homeworkfn/savehistory", chatData, {
+      headers: { token: store.state.token },
+    });
+
+    console.log("Stored", data);
+  } catch (error) {
+    console.log("storing history error ", error.message);
+  }
 };
 
 /**
@@ -359,22 +418,137 @@ const getChatIcon = (name) => {
   return sprite + "#" + name;
 };
 
+const getChattingAbilityAndHistory = async () => {
+  try {
+    const { data } = await request.get("homeworkfn/getability", {
+      headers: { token: store.state.token },
+    });
+
+    if (data.error) {
+      console.log("Get ability failed: ", data.message);
+      chattingAbility.value = true;
+      return;
+    }
+
+    chattingAbility.value = data.data.ability.available;
+    CONVERSATION_SESSION_ID.value = data.data.ability.aiConversationId;
+    conversationsStartedAt.value = data.data.ability.startTime;
+    conversationFinishedAt.value = data.data.ability.endTime;
+    chatMessages.push(...data.data.history);
+
+    // console.log("ability", data);
+  } catch (error) {
+    chattingAbility.value = true;
+    canSaveChatHistory = false;
+    console.log("Get ability failed: ", error.message);
+    console.log("chat history will not be saved");
+  }
+};
+
+let page = 1;
+let isAvailableData = true;
+const getHistoryOnScroll = async () => {
+  try {
+    if (!isAvailableData) return;
+
+    page++;
+    const { data } = await request.get(`homeworkfn/history?page=${page}`, {
+      headers: { token: store.state.token },
+    });
+
+    if (!data.data.length) {
+      isAvailableData = false;
+      return;
+    }
+
+    chatMessages.unshift(...data.data);
+
+    console.log("getHistoryOnScroll", data);
+  } catch (error) {
+    console.log("Get history failed: ", error.message);
+  }
+};
+
+const updateHomeworkAbility = async (aiConversationId = null) => {
+  try {
+    const body = aiConversationId ? { aiConversationId } : {};
+    const { data } = await request.put("homeworkfn/updateability", body, {
+      headers: { token: store.state.token },
+    });
+
+    console.log("Update homeworkAbility", data);
+  } catch (error) {
+    console.log("Update homeworkAbility failed: ", error.message);
+  }
+};
+
 /**
  * getting data on page load
  * @returns void
  */
+let remainingInterval = null;
 onMounted(async () => {
   dataLoaded.value = false;
-  if (!TOKEN.value) {
-    await getToken();
+
+  await getChattingAbilityAndHistory();
+
+  if (!chattingAbility.value) {
     dataLoaded.value = true;
 
-    await startConversation();
+    remainingInterval = setInterval(() => {
+      remainingTimeDay.value = timeUntilEndOfDay(conversationsStartedAt.value);
+      if (!Number(remainingTimeDay.value.replace(/:/g, ""))) {
+        chattingAbility.value = true;
+
+        clearInterval(remainingInterval);
+        conversationsStartedAt.value = Date.now();
+
+        remainingInterval = setInterval(() => {
+          remainingTime90.value = timeUntil90Minutes(
+            conversationsStartedAt.value,
+            REMAINING_MULTIPLIER
+          );
+        }, 1000);
+      }
+    }, 1000);
 
     return;
   }
 
+  if (!TOKEN.value) {
+    await getToken();
+  }
+
+  if (!CONVERSATION_SESSION_ID.value || !chatMessages.length) {
+    await startConversation();
+  }
+
   dataLoaded.value = true;
+
+  remainingInterval = setInterval(() => {
+    remainingTime90.value = timeUntil90Minutes(
+      conversationsStartedAt.value,
+      REMAINING_MULTIPLIER
+    );
+
+    if (!Number(remainingTime90.value.replace(/:/g, ""))) {
+      chattingAbility.value = false;
+
+      clearInterval(remainingInterval);
+      conversationsStartedAt.value = Date.now();
+
+      remainingInterval = setInterval(() => {
+        remainingTimeDay.value = timeUntilEndOfDay(
+          conversationsStartedAt.value
+        );
+      }, 1000);
+    }
+  }, 1000);
+});
+
+onUnmounted(() => {
+  clearInterval(remainingInterval);
+  updateHomeworkAbility();
 });
 </script>
 
@@ -385,6 +559,13 @@ onMounted(async () => {
 
   width: inherit;
   height: inherit;
+}
+
+.hw-remaining {
+  padding: 1px;
+  font-size: 12px;
+
+  margin: 0 auto;
 }
 
 .chat-container,
@@ -510,23 +691,24 @@ onMounted(async () => {
   background-color: #f2f4f7;
 
   & > p {
+    position: relative;
     font-family: "DFYuanMedium";
     color: #787b7b;
   }
+}
+
+.message-send-time {
+  position: absolute;
+  right: 0;
+  bottom: -20px;
+
+  color: #8898df;
 }
 
 .user-message {
   position: relative;
   flex-direction: row-reverse;
   overflow-wrap: break-word;
-
-  & > .message-content > .message-send-time {
-    position: absolute;
-    right: 0;
-    bottom: -40%;
-
-    color: #8898df;
-  }
 
   & > .message-content::before {
     position: absolute;
@@ -550,14 +732,6 @@ onMounted(async () => {
 .server-message {
   position: relative;
 
-  & > .message-content > .message-send-time {
-    position: absolute;
-    left: 0;
-    bottom: -40%;
-
-    color: #8898df;
-  }
-
   & > .message-content::before {
     position: absolute;
     content: "";
@@ -566,6 +740,10 @@ onMounted(async () => {
     bottom: 0;
     border-bottom: 17px solid #f2f4f7;
     border-left: 27px solid transparent;
+  }
+
+  &:deep(.message-send-time) {
+    left: 0;
   }
 }
 

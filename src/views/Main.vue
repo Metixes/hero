@@ -1,5 +1,6 @@
 <template>
   <div class="parent-page">
+    <UserLevelUp />
     <div class="header">
       <Header />
       <div class="tab-header">
@@ -13,13 +14,14 @@
           <component :is="Component" />
         </transition>
       </router-view>
-      <!-- <router-view></router-view> -->
     </div>
     <FooterNav @getTitle="setTitle" />
   </div>
 </template>
 
 <script setup>
+import { ref } from "vue";
+import UserLevelUp from "@/components/UI/UserLevelUp.vue";
 import Header from "@/components/UI/Header.vue";
 import FooterNav from "@/components/UI/FooterNav.vue";
 import { useRoute } from "vue-router";
@@ -40,6 +42,7 @@ const setTitle = ({ title, chiTitle }) => {
 
 <style scoped lang="scss">
 .parent-page {
+  position: relative;
   display: flex;
   flex-direction: column;
   align-items: center;

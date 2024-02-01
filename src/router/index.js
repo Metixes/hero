@@ -10,6 +10,13 @@ const routes = [
     name: "signup",
     component: Signup,
   },
+
+  {
+    path: "/",
+    name: "redirect",
+    redirect: "/welcome-page",
+  },
+
   {
     path: "/welcome-page",
     name: "welcome",
@@ -23,16 +30,11 @@ const routes = [
     component: DashboardLinks,
   },
   {
-    path: "/",
+    path: "/main",
     name: "main",
     meta: { requiresAuth: true },
     component: () => import("../views/Main.vue"),
     children: [
-      {
-        path: "",
-        name: "redirect",
-        redirect: { name: "Homework helper" },
-      },
       {
         path: "homework-helper",
         name: "Homework helper",

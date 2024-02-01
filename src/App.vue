@@ -11,7 +11,7 @@
 </template>
 
 <script setup>
-import { onMounted, ref } from "vue";
+import { onBeforeMount, ref } from "vue";
 import { useRouter } from "vue-router";
 import { useStore } from "vuex";
 import request from "./config/request.js";
@@ -51,7 +51,7 @@ const login = async (token) => {
   }
 };
 
-onMounted(async () => {
+onBeforeMount(async () => {
   isLoaded.value = false;
   const token = localStorage.getItem("token");
 
@@ -66,13 +66,12 @@ onMounted(async () => {
     store.commit("user/setUserData", response.userData);
     store.commit("setIsAuth", true);
 
-    router.push("/welcome-page");
+    // router.push("/welcome-page");
   }
 
   isLoaded.value = true;
 });
 </script>
-
 
 <style lang="scss">
 @import "./assets/fonts/fonts.scss";

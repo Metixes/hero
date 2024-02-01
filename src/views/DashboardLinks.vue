@@ -42,7 +42,7 @@ import { useRouter } from "vue-router";
 const router = useRouter();
 
 const redirectToClasses = () => {
-  router.push("/");
+  router.push("/main/homework-helper");
 };
 </script>
 

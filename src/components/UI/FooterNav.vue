@@ -4,8 +4,7 @@
       <button
         v-for="(navItem, index) in footerNavMenu"
         :key="index"
-        @click="handleButtonClick(index)"
-      >
+        @click="handleButtonClick(index)">
         <svg width="30" height="30">
           <use :href="getIconPath(index)"></use>
         </svg>
@@ -15,10 +14,11 @@
 </template>
 
 <script setup>
-import { reactive, ref } from "vue";
-import { useRouter } from "vue-router";
+import { onMounted, reactive, ref } from "vue";
+import { useRouter, useRoute } from "vue-router";
 
 const router = useRouter();
+const route = useRoute();
 
 const emits = defineEmits(["getTitle"]);
 
@@ -64,7 +64,7 @@ const footerNavMenu = reactive([
 
 const handleButtonClick = (index) => {
   activeIndex.value = index;
-  router.push(footerNavMenu[index].path);
+  router.push(`/main${footerNavMenu[index].path}`);
 
   emits("getTitle", {
     title: footerNavMenu[index].title,
@@ -82,6 +82,15 @@ const getIconPath = (index) => {
 
   return sprite + "#" + icon;
 };
+
+onMounted(() => {
+  activeIndex.value = route.meta.indexNumber;
+
+  emits("getTitle", {
+    title: footerNavMenu[activeIndex.value].title,
+    chiTitle: footerNavMenu[activeIndex.value].chiTitle,
+  });
+});
 </script>
 
 <style scoped lang="scss">

@@ -1,6 +1,7 @@
 export default {
   mounted(el) {
-    const scrollToBottom = () => {
+    const scrollToBottom = (mutations) => {
+      if (!mutations) return;
       el.scrollTop = el.scrollHeight;
     };
 
