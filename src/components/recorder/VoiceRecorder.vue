@@ -1,12 +1,14 @@
 <template>
   <button
     @click="toggleRecording"
-    style="outline: none; border: none; background: transparent">
+    style="outline: none; border: none; background: transparent"
+  >
     <svg :width="props.svgWidth" :height="props.svgHeight">
       <use
         :href="
           !isRecording ? getIcon(props.svgName) : getIcon(props.svgNameActive)
-        "></use>
+        "
+      ></use>
     </svg>
   </button>
 </template>
@@ -35,6 +37,11 @@ let recordedChunks = [];
 const startRecording = () => {
   recordedChunks = [];
 
+  navigator.getUserMedia =
+    navigator.getUserMedia ||
+    navigator.webkitGetUserMedia ||
+    navigator.mozGetUserMedia;
+
   navigator.mediaDevices
     .getUserMedia({ audio: true })
     .then((stream) => {
@@ -47,9 +54,10 @@ const startRecording = () => {
       });
       mediaRecorder.addEventListener("stop", () => {
         const blob = new Blob(recordedChunks, {
-          type: "audio/wav",
+          type: "audio/wav; codecs=opus",
         });
-        const audioUrl = URL.createObjectURL(blob);
+        let url = window.URL || window.webkitURL || window.mozURL;
+        const audioUrl = url.createObjectURL(blob);
 
         emit("getVoice", {
           file: new File([blob], `${Date.now()}.wav`, {

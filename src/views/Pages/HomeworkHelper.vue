@@ -7,7 +7,8 @@
         <div
           :class="[
             message.side === 'server' ? 'server-message' : 'user-message',
-          ]">
+          ]"
+        >
           <div class="avatar">
             <svg width="30" height="30">
               <use
@@ -15,7 +16,8 @@
                   message.side === 'server'
                     ? getChatIcon('icon-logo-icon')
                     : getChatIcon('icon-fmale')
-                "></use>
+                "
+              ></use>
             </svg>
           </div>
           <span v-if="!message.isLoaded" class="message-loader"
@@ -24,8 +26,13 @@
           <div v-else class="message-content">
             <figure
               v-if="message.contentType === 'audio' && message.audioContent"
-              class="message-audio">
-              <audio :src="message.audioContent" controls></audio>
+              class="message-audio"
+            >
+              <audio
+                type="audio.wav"
+                :src="message.audioContent"
+                controls
+              ></audio>
             </figure>
             <p v-else>{{ message.content }}</p>
             <span class="message-send-time">{{ message.time }}</span>
@@ -43,7 +50,8 @@
       :class="[
         { disabled: !dataLoaded || !chattingAbility },
         'input-container',
-      ]">
+      ]"
+    >
       <div class="uploads">
         <button @click="cameraOpened = true">
           <svg width="25" height="25">
@@ -58,9 +66,15 @@
       </div>
 
       <div class="input">
-        <input placeholder="Ask question" type="text" v-model="textMessage" />
+        <input
+          placeholder="Ask question"
+          @keyup.enter="sendInputText"
+          type="text"
+          v-model="textMessage"
+          autofocus
+        />
         <div class="send-container">
-          <button @click="sendInputText">
+          <button :disabled="!sendInputText.length" @click="sendInputText">
             <svg width="24" height="24">
               <use href="../../assets/symbol-defs.svg#icon-send"></use>
             </svg>
@@ -70,7 +84,8 @@
             svgNameActive="icon-stop"
             svgWidth="24"
             svgHeight="24"
-            @getVoice="getRecord" />
+            @getVoice="getRecord"
+          />
         </div>
       </div>
     </div>
@@ -78,7 +93,8 @@
     <VueCamera
       v-if="cameraOpened"
       @close="cameraOpened = false"
-      @snapshot="getPhoto" />
+      @snapshot="getPhoto"
+    />
   </section>
 </template>
 
@@ -92,13 +108,10 @@ import VoiceRecorder from "@/components/recorder/VoiceRecorder.vue";
 import request from "@/config/request.js";
 import { airpetFetch } from "@/utils/airpetFetcher.js";
 import { getTime } from "@/utils/getTime.js";
-
 import {
   timeUntilEndOfDay,
   timeUntil90Minutes,
 } from "../../utils/functionsUtils/homework.js";
-
-const emits = defineEmits("childComponentEvent");
 
 const TEST_USER = {
   subject: "數學",
@@ -158,10 +171,7 @@ const textMessage = ref("");
 // scroll to bottom of chat-content
 
 const scrollToBottom = () => {
-  console.log("scroll!!!!!!!!!!!!! to top");
-  console.log(document.querySelector("body"));
   const chatElement = document.querySelector(".chat-container");
-  console.log(chatElement);
   chatElement.scrollTop = chatElement.scrollHeight;
 };
 
@@ -405,12 +415,9 @@ const getToken = async () => {
 const storeUserChat = async (chatData) => {
   try {
     if (!canSaveChatHistory) return;
-
-    const { data } = await request.post("homeworkfn/savehistory", chatData, {
+    await request.post("homeworkfn/savehistory", chatData, {
       headers: { token: store.state.token },
     });
-
-    console.log("Stored", data);
   } catch (error) {
     console.log("storing history error ", error.message);
   }
@@ -425,6 +432,9 @@ const getChatIcon = (name) => {
   return sprite + "#" + name;
 };
 
+/**
+ * getChattingAbilityAndHistory
+ */
 const getChattingAbilityAndHistory = async () => {
   try {
     const { data } = await request.get("homeworkfn/getability", {
@@ -442,8 +452,6 @@ const getChattingAbilityAndHistory = async () => {
     conversationsStartedAt.value = data.data.ability.startTime;
     conversationFinishedAt.value = data.data.ability.endTime;
     chatMessages.push(...data.data.history);
-
-    // console.log("ability", data);
   } catch (error) {
     chattingAbility.value = true;
     canSaveChatHistory = false;
@@ -452,6 +460,10 @@ const getChattingAbilityAndHistory = async () => {
   }
 };
 
+/**
+ * Getting chat history on scroll bottom per gage
+ * @returns void
+ */
 let page = 1;
 let isAvailableData = true;
 const getHistoryOnScroll = async () => {
@@ -469,21 +481,22 @@ const getHistoryOnScroll = async () => {
     }
 
     chatMessages.unshift(...data.data);
-
-    console.log("getHistoryOnScroll", data);
   } catch (error) {
     console.log("Get history failed: ", error.message);
   }
 };
 
+/**
+ * make request to backend for update end conversation time
+ * @param {string | null}  aiConversationId the id of the conversation or null
+ * @returns void
+ */
 const updateHomeworkAbility = async (aiConversationId = null) => {
   try {
     const body = aiConversationId ? { aiConversationId } : {};
-    const { data } = await request.put("homeworkfn/updateability", body, {
+    await request.put("homeworkfn/updateability", body, {
       headers: { token: store.state.token },
     });
-
-    console.log("Update homeworkAbility", data);
   } catch (error) {
     console.log("Update homeworkAbility failed: ", error.message);
   }
@@ -495,7 +508,7 @@ watch(
     if (n) {
       setTimeout(() => {
         scrollToBottom();
-      }, 1500);
+      }, 1000);
     }
   }
 );

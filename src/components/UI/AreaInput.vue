@@ -1,13 +1,51 @@
 <template>
   <div class="area">
     <textarea class="area-input" rows="1" placeholder="請造句"></textarea>
-    <svg class="area-input-btn" width="25" height="25">
+    <!-- <svg class="area-input-btn" width="25" height="25">
       <use href="../../assets/symbol-defs.svg#icon-voice"></use>
-    </svg>
+    </svg> -->
+    <VoiceRecorder
+      class="area-input-btn"
+      svgName="icon-voice"
+      svgNameActive="icon-stop"
+      svgWidth="24"
+      svgHeight="24"
+      @getVoice="getRecord" />
   </div>
 </template>
 
-<script setup></script>
+<script setup>
+import VoiceRecorder from "@/components/recorder/VoiceRecorder.vue";
+import { airpetFetch } from "@/utils/airpetFetcher.js";
+
+const TEST_USER = {
+  subject: "數學",
+  response_type: "Text",
+  school_year: 5,
+  student_name: "yunfei ydes@ip",
+  action: "Start",
+};
+
+const getRecord = async ({ file, audioUrl }) => {
+  console.log(file, audioUrl);
+  // getText;
+};
+
+// const getText = async (data, token) => {
+//   // "continue-conversation",
+//   //     {
+//   //       ...dataToSend,
+//   //       response_type: "Text",
+//   //       action: "Continue",
+//   //     },
+//   const data = await airpetFetch(
+//     "english-to-chinese",
+//     "Hello",
+//     localStorage.getItem("token")
+//   );
+//   console.log(data);
+// };
+</script>
 
 <style scoped lang="scss">
 .area {
@@ -33,6 +71,7 @@
     font-size: 14px;
 
     &-btn {
+      display: flex;
       position: absolute;
       bottom: 10px;
       right: 10px;

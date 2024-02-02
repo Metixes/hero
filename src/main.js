@@ -17,4 +17,3 @@ const app = createApp(App);
 directives.forEach((directive) => app.directive(directive.name, directive));
 
 app.use(store).use(router).use(Notifications).use(Antd).mount("#app");
-// start
