@@ -28,11 +28,10 @@
               v-if="message.contentType === 'audio' && message.audioContent"
               class="message-audio"
             >
-              <audio
-                type="audio/wav"
-                :src="message.audioContent"
-                controls
-              ></audio>
+              <audio controls>
+                <source type="audio/mp3" :src="message.audioContent" />
+                Browser doesn't support audio element
+              </audio>
             </figure>
             <p v-else>{{ message.content }}</p>
             <span class="message-send-time">{{ message.time }}</span>

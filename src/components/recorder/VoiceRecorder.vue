@@ -53,14 +53,17 @@ const startRecording = () => {
         }
       });
       mediaRecorder.addEventListener("stop", () => {
-        const blob = new Blob(recordedChunks, {
-          type: "audio/wav; codecs=opus",
+        const blobMp3 = new Blob(recordedChunks, {
+          type: "audio/mp3; codecs=opus",
+        });
+        const blobWav = new Blob(recordedChunks, {
+          type: "audio/wav",
         });
         let url = window.URL || window.webkitURL || window.mozURL;
-        const audioUrl = url.createObjectURL(blob);
+        const audioUrl = url.createObjectURL(blobMp3);
 
         emit("getVoice", {
-          file: new File([blob], `${Date.now()}.wav`, {
+          file: new File([blobWav], `${Date.now()}.wav`, {
             type: "audio/wav",
           }),
           audioUrl,
