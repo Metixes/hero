@@ -29,7 +29,7 @@
               class="message-audio"
             >
               <audio
-                type="audio.wav"
+                type="audio/wav"
                 :src="message.audioContent"
                 controls
               ></audio>
