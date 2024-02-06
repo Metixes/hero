@@ -1,11 +1,10 @@
 <template>
   <div class="content-logo">
     <svg>
-      <use xlink:href="@/assets/sprite.svg#logo" />
+      <use xlink:href="@/assets/symbol-defs.svg#icon-logo" />
     </svg>
   </div>
 </template>
-
 
 <style scoped lang="scss">
 .content-logo {

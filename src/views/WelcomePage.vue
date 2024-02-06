@@ -10,8 +10,7 @@
             <path
               d="M76.115,134.854v44.094s6.393-16.506,34.7-16.506"
               transform="translate(-76.115 -134.854)"
-              fill="#e37c8c"
-            />
+              fill="#e37c8c" />
           </svg>
         </div>
       </div>
@@ -32,9 +31,7 @@ import MainHeader from "@/components/UI/MainHeader.vue";
 const store = useStore();
 const router = useRouter();
 
-const welcomeMessage = ref(
-  `Welcome back, ${store.getters["user/getFullName"]}`
-);
+const welcomeMessage = ref(`歡迎您回來, ${store.getters["user/getFullName"]}`);
 
 onMounted(() => {
   setTimeout(() => {

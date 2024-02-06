@@ -113,4 +113,10 @@ body {
 .fade-leave-to {
   opacity: 0;
 }
+
+.disabled {
+  opacity: 0.5;
+  pointer-events: none;
+  cursor: default;
+}
 </style>

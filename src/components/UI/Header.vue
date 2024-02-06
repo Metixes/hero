@@ -1,8 +1,11 @@
 <template>
   <header class="parent-header">
     <div @click="router.push('/dashboard-links')">
-      <svg class="main-logo" height="40" width="180">
+      <!-- <svg class="main-logo" height="40" width="180">
         <use href="@/assets/sprite.svg#logo"></use>
+      </svg> -->
+      <svg class="main-logo" height="40" width="180">
+        <use href="@/assets/symbol-defs.svg#icon-logo"></use>
       </svg>
     </div>
     <div class="user">

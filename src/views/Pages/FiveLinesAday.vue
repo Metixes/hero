@@ -1,52 +1,179 @@
 <template>
   <section class="content">
-    <a-carousel class="carousel" :after-change="onChange">
-      <div class="slides">
-        <div class="slides-img">
-          <img src="../../assets/five-lines-a-day/slide1.jpg" alt="img" />
-        </div>
-        <div class="slides-task">
-          <h3 class="slides-task-first">vegetables</h3>
-          <h3 class="slides-task-second">蔬菜</h3>
-        </div>
-        <p class="slides-question">
-          He runs a fruit and vegetable stall in the market.
-        </p>
-      </div>
-      <div class="slides">
-        <div class="slides-img">
-          <img src="../../assets/five-lines-a-day/slide1.jpg" alt="img" />
-        </div>
-        <div class="slides-task">
-          <h3 class="slides-task-first">vegetables</h3>
-          <h3 class="slides-task-second">蔬菜</h3>
-        </div>
-        <p class="slides-question">
-          He runs a fruit and vegetable stall in the market.
-        </p>
-      </div>
-    </a-carousel>
-    <div class="form-input">
-      <AreaInput />
+    <div v-if="!store.state.user.isLoaded">
+      <Loader />
     </div>
-    <SubmitButton />
+    <div v-else class="content-wrapper">
+      <a-carousel
+        ref="slider"
+        :after-change="currentSlideIndex"
+        class="carousel">
+        <div
+          v-for="slide of store.state.user.userTasks"
+          :key="slide.id"
+          class="slides">
+          <div class="slides-img">
+            <img :src="slide.image" :alt="slide.eng" />
+          </div>
+          <div class="slides-task">
+            <h3 class="slides-task-first">{{ slide.eng }}</h3>
+            <h3 class="slides-task-second">{{ slide.chi }}</h3>
+          </div>
+          <p class="slides-question">
+            {{ slide.sentence_eng }}
+          </p>
+        </div>
+      </a-carousel>
+      <div class="form-input">
+        <textarea
+          :inert="store.state.user.userAnswers[currentSlide].value.length"
+          v-model="transcriptText"
+          class="form-input-area"
+          rows="1"
+          maxlength="100"
+          placeholder="請造句" />
+        <SpeechToText
+          @click="() => (isRecording = !isRecording)"
+          v-model:transcriptText="transcriptText"
+          :class="[
+            'form-input-btn',
+            {
+              disabled: store.state.user.userAnswers[currentSlide].value.length,
+            },
+          ]" />
+      </div>
+      <button
+        :disabled="store.state.user.userAnswers[currentSlide].value.length"
+        @click="submitTask"
+        class="submit-button">
+        提交
+      </button>
+    </div>
   </section>
 </template>
 
 <script setup>
-import AreaInput from "@/components/UI/AreaInput.vue";
-import SubmitButton from "@/components/UI/SubmitButton.vue";
+import { ref, watch, onMounted } from "vue";
+import { useStore } from "vuex";
+import { notify } from "@kyvg/vue3-notification";
 
-const onChange = (current) => {};
+import AreaInput from "@/components/UI/AreaInput.vue";
+import SpeechToText from "@/components/UI/SpeechToText.vue";
+import Loader from "@/components/UI/Loader.vue";
+import request from "@/config/request";
+
+const store = useStore();
+const transcriptText = ref(store.state.user.userAnswers[0].value);
+const slider = ref(null);
+const isRecording = ref(false);
+const currentSlide = ref(0);
+const userAnswers = [
+  "firstWordAnswer",
+  "secondWordAnswer",
+  "thirdWordAnswer",
+  "fourthWordAnswer",
+  "fiveWordAnswer",
+];
+const currentSlideIndex = (current) => {
+  if (store.state.user.userAnswers[current].value) {
+    transcriptText.value = store.state.user.userAnswers[current].value;
+  } else {
+    transcriptText.value = "";
+  }
+  currentSlide.value = current;
+};
+
+const submitTask = async () => {
+  try {
+    const { data } = await request.put(
+      "linesstoryfn/task",
+      { [userAnswers[currentSlide.value]]: transcriptText.value },
+      {
+        headers: {
+          token: store.state.token,
+        },
+      }
+    );
+
+    if (data.error) {
+      console.log(data.error);
+      return;
+    }
+
+    if (data.data.completed) {
+      store.commit("user/setIsTasksCompleted", true);
+      notify({
+        title: "All done!",
+        text: "Next tasks will be available tomorrow",
+      });
+    }
+
+    const newAnswers = [...store.state.user.userAnswers];
+    newAnswers[currentSlide.value].value = transcriptText.value;
+
+    store.commit("user/setUserAnswers", newAnswers);
+    console.log(store.state.user.userAnswers);
+    slider.value.next();
+  } catch (error) {
+    console.log("error");
+  }
+};
+
+watch(
+  () => transcriptText.value,
+  (n, o) => {
+    if (n.length) {
+      transcriptText.value = n;
+    }
+  }
+);
+watch(
+  () => store.state.user.isLoaded,
+  (n, o) => {
+    if (n) {
+      if (store.state.user.isTasksCompleted) {
+        notify({
+          title: "All done!",
+          text: "Next tasks will be available tomorrow",
+        });
+      }
+      transcriptText.value = store.state.user.userAnswers[0].value;
+
+      const idx = store.state.user.userAnswers.findIndex(
+        (el) => !el.value.length
+      );
+
+      console.log(idx);
+
+      if (idx !== -1) {
+        setTimeout(() => {
+          slider.value.goTo(idx, true);
+          currentSlide.value = idx;
+        }, 0);
+      }
+    }
+  }
+);
+
+onMounted(() => {
+  if (!store.state.user.userTasks.length) {
+    store.dispatch("user/getTasks");
+  }
+});
 </script>
 
 <style scoped lang="scss">
 .content {
   padding: 20px 0;
   height: 100%;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
+
+  &-wrapper {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
 }
 .carousel {
   min-width: 0;
@@ -75,7 +202,7 @@ const onChange = (current) => {};
     border-radius: 8px;
 
     & > img {
-      //   position: absolute;
+      position: absolute;
       width: 100%;
       height: auto;
       object-fit: cover;
@@ -106,7 +233,7 @@ const onChange = (current) => {};
 .ant-carousel {
   &:deep(.slick-dots) {
     display: flex !important;
-    gap: 10px;
+    gap: 20px;
     bottom: -30px !important;
   }
   &:deep(.slick-dots) > li {
@@ -126,13 +253,49 @@ const onChange = (current) => {};
 }
 
 .form-input {
+  position: relative;
   flex: 1 1 auto;
   margin: 50px auto 30px;
   max-width: 80%;
   width: 100%;
+
+  &-area {
+    width: 100%;
+    height: 100%;
+    padding: 10px 45px 10px 20px;
+
+    overflow-y: scroll;
+    outline: none;
+    border: none;
+    border-radius: 8px;
+    resize: none;
+    scroll-behavior: smooth;
+    color: #adadad;
+    background-color: #f3f2f9;
+
+    font-family: "Roboto";
+    font-size: 14px;
+
+    &::-webkit-scrollbar {
+      display: none;
+    }
+    &::placeholder {
+      font-family: "DFYuanMedium";
+      color: #adadad;
+    }
+  }
+
+  &-btn {
+    max-width: 25px;
+    max-height: 25px;
+    position: absolute;
+    padding: 4px;
+    bottom: 6px;
+    right: 6px;
+  }
 }
 
-.button {
+.submit-button {
   padding: 10px 40px;
   border-radius: 18px;
   outline: none;
@@ -144,5 +307,9 @@ const onChange = (current) => {};
 
   font-family: "HanWangYenHeavy";
   color: var(--white);
+
+  &:disabled {
+    background-color: #adadad;
+  }
 }
 </style>
