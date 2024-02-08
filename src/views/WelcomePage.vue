@@ -42,6 +42,8 @@ onMounted(() => {
 
 <style scoped lang="scss">
 .content {
+  max-width: 1024px;
+  margin: 0 auto;
   display: flex;
   flex-direction: column;
   position: relative;

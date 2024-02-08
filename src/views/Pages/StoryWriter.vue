@@ -7,7 +7,8 @@
           v-for="task of store.state.user.userTasks"
           :key="task.id"
           @click="listenTasks(task.audio)"
-          class="translation-items">
+          class="translation-items"
+        >
           <span class="translation-btn">{{ task.eng }} {{ task.chi }} </span>
           <svg class="translation-icon-horn">
             <use href="@/assets/symbol-defs.svg#icon-horn" />
@@ -22,35 +23,44 @@
             xmlns="http://www.w3.org/2000/svg"
             width="25"
             height="25"
-            viewBox="0 0 4.923 4.025">
+            viewBox="0 0 4.923 4.025"
+          >
             <path
               d="M597.405,687.24a.272.272,0,0,1,.168.252v3.282a.272.272,0,0,1-.326.268.269.269,0,0,1-.14-.074l-1.014-1.014h-.707a.273.273,0,0,1-.274-.274v-1.094a.273.273,0,0,1,.274-.273h.707l1.014-1.014a.272.272,0,0,1,.3-.059Zm1.442-.04a.272.272,0,0,1,.387,0,2.733,2.733,0,0,1,0,3.867.274.274,0,0,1-.387-.387,2.187,2.187,0,0,0,0-3.094.273.273,0,0,1,0-.386Zm-.774.773a.262.262,0,0,1,.089-.059.27.27,0,0,1,.105-.021.274.274,0,0,1,.1.021.248.248,0,0,1,.088.059,1.641,1.641,0,0,1,0,2.321.274.274,0,0,1-.387-.387,1.092,1.092,0,0,0,0-1.547.294.294,0,0,1-.059-.089.27.27,0,0,1-.021-.1.265.265,0,0,1,.021-.1.271.271,0,0,1,.059-.089Z"
               transform="translate(-595.112 -687.119)"
-              fill="#fff" />
+              fill="#fff"
+            />
           </svg>
           <span class="server-area-options-gpt">ChatGPT範例</span>
         </div>
       </div>
       <div class="client-area">
         <textarea
-          :inert="store.state.user.userStoryAnswer.length"
+          :inert="
+            store.state.user.userStoryAnswer.length ||
+            dayjs(store.state.user.currentDate).format('YYYY-MM-DD') !==
+              dayjs(new Date()).format('YYYY-MM-DD')
+          "
           v-model="transcriptText"
           class="client-area-input"
           rows="1"
           maxlength="100"
-          placeholder="請仿照範例作一篇100字內故事" />
+          placeholder="請仿照範例作一篇100字內故事"
+        />
         <SpeechToText
           @click="isRecording = !isRecording"
           v-model:transcriptText="transcriptText"
           :class="[
             'client-area-btn',
             { disabled: store.state.user.userStoryAnswer.length },
-          ]" />
+          ]"
+        />
       </div>
       <button
         @click="submitUserAnswer"
-        :disabled="store.state.user.userStoryAnswer.length"
-        class="submit-button">
+        :disabled="store.state.user.userStoryAnswer.length || disabledSubmitBtn"
+        class="submit-button"
+      >
         提交
       </button>
     </div>
@@ -58,60 +68,36 @@
 </template>
 
 <script setup>
-import { ref, onMounted, watch } from "vue";
+import { ref, onMounted, watch, computed } from "vue";
 import { useStore } from "vuex";
 import { notify } from "@kyvg/vue3-notification";
 
-import AreaInputAi from "@/components/UI/AreaInputAi.vue";
 import Loader from "@/components/UI/Loader.vue";
 import SpeechToText from "@/components/UI/SpeechToText.vue";
 import request from "@/config/request";
+import dayjs from "dayjs";
 
 const store = useStore();
 
 const transcriptText = ref(store.state.user.userStoryAnswer);
 const isRecording = ref(false);
+const disabledSubmitBtn = computed(() => {
+  if (transcriptText.value) {
+    return false;
+  } else {
+    return true;
+  }
+});
 
 const listenTasks = (audio) => {
   const audioObj = new Audio(audio);
   audioObj.play();
 };
 
-const submitUserAnswer = async () => {
-  try {
-    if (!transcriptText.value) {
-      // TODO NOTIFICATION
-      return;
-    }
-
-    const { data } = await request.put(
-      "linesstoryfn/task",
-      { storyAnswer: transcriptText.value },
-      {
-        headers: {
-          token: store.state.token,
-        },
-      }
-    );
-
-    if (data.error) {
-      console.log(data.error);
-      return;
-    }
-
-    if (data.data.completed) {
-      store.commit("user/setIsTasksCompleted", true);
-      notify({
-        title: "All done!",
-        text: "Next tasks will be available tomorrow",
-      });
-    }
-
-    store.commit("user/setUserStoryAnswer", transcriptText.value);
-  } catch (error) {
-    // TODO NOTIFICATION
-    console.log("error");
-  }
+const submitUserAnswer = () => {
+  store.dispatch("user/submitTask", {
+    storyAnswer: transcriptText.value,
+  });
 };
 
 watch(
@@ -120,7 +106,7 @@ watch(
     if (n.length) {
       transcriptText.value = n;
     }
-  }
+  },
 );
 
 watch(
@@ -133,11 +119,9 @@ watch(
           text: "Next tasks will be available tomorrow",
         });
       }
-      console.log(transcriptText.value);
       transcriptText.value = store.state.user.userStoryAnswer;
-      console.log(transcriptText.value);
     }
-  }
+  },
 );
 
 onMounted(async () => {

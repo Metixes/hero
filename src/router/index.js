@@ -59,12 +59,12 @@ const routes = [
         meta: { requiresAuth: true, indexNumber: 3 },
         component: () => import("../views/Pages/WriteMyDiaries.vue"),
       },
-      {
-        path: "settings",
-        name: "Settings",
-        meta: { requiresAuth: true, indexNumber: 4 },
-        component: () => import("../views/Pages/Settings.vue"),
-      },
+      // {
+      //   path: "settings",
+      //   name: "Settings",
+      //   meta: { requiresAuth: true, indexNumber: 4 },
+      //   component: () => import("../views/Pages/Settings.vue"),
+      // },
     ],
   },
 ];

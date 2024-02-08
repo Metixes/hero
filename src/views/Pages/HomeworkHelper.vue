@@ -1,14 +1,10 @@
 <template>
   <section class="homework-section">
     <div v-if="!dataLoaded" class="loader-container"><Loader /></div>
-    <div v-if="dataLoaded" class="chat-container">
+    <div ref="chartRef" v-if="dataLoaded" class="chat-container">
       <div v-intersection="getHistoryOnScroll" style="height: 1px"></div>
       <div v-for="(message, index) in chatMessages" :key="index">
-        <div
-          :class="[
-            message.side === 'server' ? 'server-message' : 'user-message',
-          ]"
-        >
+        <div :class="[message.side === 'server' ? 'server-message' : 'user-message']">
           <div class="avatar">
             <svg width="30" height="30">
               <use
@@ -30,6 +26,7 @@
             >
               <audio controls>
                 <source type="audio/mp3" :src="message.audioContent" />
+                <source type="audio/wav" :src="message.audioContent" />
                 Browser doesn't support audio element
               </audio>
             </figure>
@@ -40,17 +37,10 @@
       </div>
     </div>
     <div v-if="dataLoaded" class="hw-remaining">
-      <p v-if="!chattingAbility">
-        Will be available after: {{ remainingTimeDay }}
-      </p>
+      <p v-if="!chattingAbility">Will be available after: {{ remainingTimeDay }}</p>
       <p v-else>Time left: {{ remainingTime90 }}</p>
     </div>
-    <div
-      :class="[
-        { disabled: !dataLoaded || !chattingAbility },
-        'input-container',
-      ]"
-    >
+    <div :class="[{ disabled: !dataLoaded || !chattingAbility }, 'input-container']">
       <div class="uploads">
         <button @click="cameraOpened = true">
           <svg width="25" height="25">
@@ -67,14 +57,14 @@
       <div class="input">
         <input
           placeholder="Ask question"
-          @keyup.enter="sendInputText"
+          @keydown.enter="sendInputText"
           type="text"
           v-model="textMessage"
           autofocus
         />
         <div class="send-container">
-          <button :disabled="!sendInputText.length" @click="sendInputText">
-            <svg width="24" height="24">
+          <button :disabled="!sendInputText.length">
+            <svg @click="sendInputText" width="24" height="24">
               <use href="../../assets/symbol-defs.svg#icon-send"></use>
             </svg>
           </button>
@@ -89,11 +79,7 @@
       </div>
     </div>
 
-    <VueCamera
-      v-if="cameraOpened"
-      @close="cameraOpened = false"
-      @snapshot="getPhoto"
-    />
+    <VueCamera v-if="cameraOpened" @close="cameraOpened = false" @snapshot="getPhoto" />
   </section>
 </template>
 
@@ -114,13 +100,20 @@ import {
 
 const TEST_USER = {
   subject: "數學",
-  response_type: "Text",
   school_year: 5,
   student_name: "yunfei ydes@ip",
   action: "Start",
 };
 
+const chartRef = ref(null);
+
 const store = useStore();
+
+//getting chat response type
+const response_type = store.getters["getResponseType"];
+
+//!TEST FUTURE
+TEST_USER.response_type = response_type;
 
 /**
  * This blok for HomeworkHelper
@@ -172,6 +165,7 @@ const textMessage = ref("");
 const scrollToBottom = () => {
   const chatElement = document.querySelector(".chat-container");
   chatElement.scrollTop = chatElement.scrollHeight;
+  // chartRef.value.scrollTop = chartRef.value.scrollHeight;
 };
 
 /**
@@ -209,16 +203,13 @@ const startConversation = async () => {
       side: "server",
       title: "伴讀小雲飛",
       content: "",
+      audioContent: null,
       contentType: "text",
       isLoaded: false,
       time: 0,
     });
 
-    const data = await airpetFetch(
-      "start-conversation",
-      TEST_USER,
-      TOKEN.value
-    );
+    const data = await airpetFetch("start-conversation", TEST_USER, TOKEN.value);
 
     CONVERSATION_SESSION_ID.value = data.caller_id;
     chatMessages.at(-1).content = data.response;
@@ -252,6 +243,7 @@ const continueConversation = async (data, contentType = "text") => {
       chatMessages.push({
         side: "client",
         title: "",
+        audioContent: null,
         content: Object.values(data)[0],
         contentType: "text",
         isLoaded: true,
@@ -276,6 +268,7 @@ const continueConversation = async (data, contentType = "text") => {
     chatMessages.push({
       side: "server",
       title: "伴讀小雲飛",
+      audioContent: null,
       content: "",
       contentType: "text",
       isLoaded: false,
@@ -286,12 +279,25 @@ const continueConversation = async (data, contentType = "text") => {
       "continue-conversation",
       {
         ...dataToSend,
-        response_type: "Text",
+        response_type,
         action: "Continue",
       },
       TOKEN.value,
-      CONVERSATION_SESSION_ID.value
+      CONVERSATION_SESSION_ID.value,
     );
+
+    if (response_type === "Audio") {
+      const textToSpeech = await airpetFetch(
+        "text-to-speech-chinese",
+        {
+          text: continueConversation.response,
+        },
+        TOKEN.value,
+      );
+
+      chatMessages.at(-1).audioContent = textToSpeech.audio;
+      chatMessages.at(-1).contentType = "audio";
+    }
 
     chatMessages.at(-1).content = continueConversation.response;
     chatMessages.at(-1).isLoaded = true;
@@ -316,16 +322,13 @@ const imageTextExplanation = async (data) => {
       side: "client",
       title: "",
       content: "",
+      audioContent: null,
       contentType: "text",
       isLoaded: false,
       time: 0,
     });
 
-    const extractText = await airpetFetch(
-      "extract-image-text",
-      data,
-      TOKEN.value
-    );
+    const extractText = await airpetFetch("extract-image-text", data, TOKEN.value);
 
     chatMessages.at(-1).content = extractText.extracted_text;
     chatMessages.at(-1).isLoaded = true;
@@ -336,6 +339,7 @@ const imageTextExplanation = async (data) => {
       side: "server",
       title: "伴讀小雲飛",
       content: "",
+      audioContent: null,
       contentType: "text",
       isLoaded: false,
       time: 0,
@@ -347,8 +351,21 @@ const imageTextExplanation = async (data) => {
         subject: TEST_USER.subject,
         text: extractText.extracted_text,
       },
-      TOKEN.value
+      TOKEN.value,
     );
+
+    if (response_type === "Audio") {
+      const textToSpeech = await airpetFetch(
+        "text-to-speech-chinese",
+        {
+          text: explanation.response,
+        },
+        TOKEN.value,
+      );
+
+      chatMessages.at(-1).audioContent = textToSpeech.audio;
+      chatMessages.at(-1).contentType = "audio";
+    }
 
     chatMessages.at(-1).content = explanation.response;
     chatMessages.at(-1).isLoaded = true;
@@ -388,6 +405,7 @@ const sendInputText = () => {
     input_text: textMessage.value,
   });
   textMessage.value = "";
+  scrollToBottom();
 };
 
 /**
@@ -509,8 +527,16 @@ watch(
         scrollToBottom();
       }, 1000);
     }
-  }
+  },
 );
+// watch(
+//   () => chartRef.value,
+//   (n, o) => {
+//     if (n) {
+//       chartRef.value.scrollTo(1000, n);
+//     }
+//   },
+// );
 
 /**
  * getting data on page load
@@ -536,7 +562,7 @@ onMounted(async () => {
         remainingInterval = setInterval(() => {
           remainingTime90.value = timeUntil90Minutes(
             conversationsStartedAt.value,
-            REMAINING_MULTIPLIER
+            REMAINING_MULTIPLIER,
           );
         }, 1000);
       }
@@ -558,7 +584,7 @@ onMounted(async () => {
   remainingInterval = setInterval(() => {
     remainingTime90.value = timeUntil90Minutes(
       conversationsStartedAt.value,
-      REMAINING_MULTIPLIER
+      REMAINING_MULTIPLIER,
     );
 
     if (!Number(remainingTime90.value.replace(/:/g, ""))) {
@@ -568,9 +594,7 @@ onMounted(async () => {
       conversationsStartedAt.value = Date.now();
 
       remainingInterval = setInterval(() => {
-        remainingTimeDay.value = timeUntilEndOfDay(
-          conversationsStartedAt.value
-        );
+        remainingTimeDay.value = timeUntilEndOfDay(conversationsStartedAt.value);
       }, 1000);
     }
   }, 1000);

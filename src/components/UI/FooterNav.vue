@@ -4,9 +4,21 @@
       <button
         v-for="(navItem, index) in footerNavMenu"
         :key="index"
-        @click="handleButtonClick(index)">
+        @click="handleButtonClick(index)"
+      >
         <svg width="30" height="30">
           <use :href="getIconPath(index)"></use>
+        </svg>
+      </button>
+      <button @click="store.commit('user/setShowMenu', false)">
+        <svg width="30" height="30">
+          <use
+            :href="
+              store.state.user.showMenu
+                ? require('@/assets/symbol-defs.svg') + '#icon-settings'
+                : require('@/assets/symbol-defs.svg') + '#icon-settings-active'
+            "
+          ></use>
         </svg>
       </button>
     </div>
@@ -16,9 +28,11 @@
 <script setup>
 import { onMounted, reactive, ref } from "vue";
 import { useRouter, useRoute } from "vue-router";
+import { useStore } from "vuex";
 
 const router = useRouter();
 const route = useRoute();
+const store = useStore();
 
 const emits = defineEmits(["getTitle"]);
 
@@ -52,18 +66,19 @@ const footerNavMenu = reactive([
     activeIcon: "icon-daries-active",
     chiTitle: "用口寫日誌",
   },
-  {
-    path: "/settings",
-    title: "Settings",
-    icon: "icon-settings",
-    activeIcon: "icon-settings-active",
-    enTitle: "",
-    chiTitle: "",
-  },
+  // {
+  //   path: "/settings",
+  //   title: "Settings",
+  //   icon: "icon-settings",
+  //   activeIcon: "icon-settings-active",
+  //   enTitle: "",
+  //   chiTitle: "",
+  // },
 ]);
 
 const handleButtonClick = (index) => {
   activeIndex.value = index;
+
   router.push(`/main${footerNavMenu[index].path}`);
 
   emits("getTitle", {
@@ -107,7 +122,7 @@ onMounted(() => {
   flex-direction: row;
   justify-content: space-around;
 
-  padding: 25px 20px;
+  padding: 15px 20px;
 
   border-top-right-radius: 20px;
   border-top-left-radius: 20px;

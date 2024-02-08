@@ -1,11 +1,25 @@
+<
 <template>
   <div class="parent-page">
-    <UserLevelUp />
+    <SideBar />
+    <LevelUp />
+    <CompletedTasks />
     <div class="header">
       <Header />
       <div class="tab-header">
-        <p class="tab-header-title">{{ tabHeaders.title }}</p>
-        <p class="tab-header-subtitle">{{ tabHeaders.chiTitle }}</p>
+        <div>
+          <p class="tab-header-title">{{ tabHeaders.title }}</p>
+          <p class="tab-header-subtitle">{{ tabHeaders.chiTitle }}</p>
+        </div>
+        <div v-if="showDataPicker" class="history-answers">
+          <a-date-picker
+            :allowClear="false"
+            :disabled-date="disabledDate"
+            v-model:value="currentDate"
+            format="YYYY-MM-DD"
+            @change="onSelectDate"
+          />
+        </div>
       </div>
     </div>
     <div class="tab-view">
@@ -20,14 +34,44 @@
 </template>
 
 <script setup>
-import { ref } from "vue";
-import UserLevelUp from "@/components/UI/UserLevelUp.vue";
+import { ref, reactive, watch, computed } from "vue";
+import { useRoute, useRouter } from "vue-router";
+import { useStore } from "vuex";
+import SideBar from "@/components/UI/SideBar.vue";
+import LevelUp from "@/components/UI/LevelUp.vue";
+import CompletedTasks from "@/components/UI/CompletedTasks.vue";
 import Header from "@/components/UI/Header.vue";
 import FooterNav from "@/components/UI/FooterNav.vue";
-import { useRoute } from "vue-router";
-import { reactive } from "vue";
+import dayjs from "dayjs";
 
 const route = useRoute();
+const router = useRoute();
+const store = useStore();
+const currentDate = ref(dayjs(store.state.user.currentDate), "YYYY-MM-DD");
+
+const showDataPicker = computed(() => {
+  switch (route.path) {
+    case "/main/five-lines-a-day":
+    case "/main/story-writer":
+      return true;
+      break;
+    case "/main/write-my-diaries":
+      return true;
+      break;
+    default:
+      return false;
+      break;
+  }
+});
+
+const disabledDate = (current) => {
+  return current > dayjs().endOf("day");
+};
+
+const onSelectDate = (date, dateString) => {
+  currentDate.value = date;
+  store.commit("user/setCurrentDate", dateString);
+};
 
 const tabHeaders = reactive({
   title: "Homework helper",
@@ -38,10 +82,34 @@ const setTitle = ({ title, chiTitle }) => {
   tabHeaders.title = title;
   tabHeaders.chiTitle = chiTitle;
 };
+
+watch(
+  () => store.state.user.currentDate,
+  (n, o) => {
+    if (n) {
+      // store.dispatch("user/getTasks", currentDate.value.format("YYYY-MM-DD"));
+
+      switch (route.path) {
+        case "/main/five-lines-a-day":
+        case "/main/story-writer":
+          store.dispatch("user/getTasks", currentDate.value.format("YYYY-MM-DD"));
+          break;
+        case "/main/write-my-diaries":
+          store.dispatch("user/updateStory", currentDate.value.format("YYYY-MM-DD"));
+          break;
+
+        default:
+          break;
+      }
+    }
+  },
+);
 </script>
 
 <style scoped lang="scss">
 .parent-page {
+  max-width: 1024px;
+  margin: 0 auto;
   position: relative;
   display: flex;
   flex-direction: column;
@@ -50,6 +118,7 @@ const setTitle = ({ title, chiTitle }) => {
 
   height: inherit;
 
+  overflow-x: hidden;
   background-image: url("@/assets/main-bg.jpg");
   background-position: center;
   background-repeat: no-repeat;
@@ -61,9 +130,10 @@ const setTitle = ({ title, chiTitle }) => {
 }
 
 .tab-header {
-  margin-left: 25px;
+  padding: 0 20px;
   display: flex;
-  flex-direction: column;
+  align-items: center;
+  justify-content: space-between;
   gap: 5px;
 
   &-title {
@@ -73,6 +143,21 @@ const setTitle = ({ title, chiTitle }) => {
     font-family: "HanWangYenHeavy";
     font-size: 22px;
     color: #091e4a;
+  }
+}
+
+.history-answers {
+  .ant-picker {
+    :deep(input) {
+      max-width: 0;
+
+      &:focus {
+        max-width: 90px;
+      }
+    }
+    :deep(.ant-picker-suffix) {
+      margin-inline-start: 0;
+    }
   }
 }
 

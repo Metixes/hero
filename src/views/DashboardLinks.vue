@@ -8,6 +8,7 @@
     />
     <div class="first-section">
       <img
+        id="home-work"
         @click="redirectToClasses"
         class="bg"
         src="../assets/dashboard-links/first-section/first-link.png"
@@ -17,6 +18,7 @@
     </div>
     <div class="second-section">
       <img
+        id="five-lines"
         @click="redirectToClasses"
         class="bg"
         src="../assets/dashboard-links/second-section/second-link.png"
@@ -26,6 +28,7 @@
     </div>
     <div class="third-section">
       <img
+        id="story-writer"
         @click="redirectToClasses"
         class="bg"
         src="../assets/dashboard-links/third-section/third-link.png"
@@ -41,13 +44,30 @@ import MainHeader from "@/components/UI/MainHeader.vue";
 import { useRouter } from "vue-router";
 const router = useRouter();
 
-const redirectToClasses = () => {
-  router.push("/main/homework-helper");
+const redirectToClasses = (event) => {
+  switch (event.target.attributes[1].value) {
+    case "home-work":
+      router.push("/main/homework-helper");
+      break;
+
+    case "five-lines":
+      router.push("/main/five-lines-a-day");
+      break;
+
+    case "story-writer":
+      router.push("/main/story-writer");
+      break;
+
+    default:
+      break;
+  }
 };
 </script>
 
 <style scoped lang="scss">
 .content {
+  max-width: 1024px;
+  margin: 0 auto;
   padding: 10px 0 14px;
   position: relative;
   width: 100%;

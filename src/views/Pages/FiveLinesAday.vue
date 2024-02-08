@@ -4,14 +4,8 @@
       <Loader />
     </div>
     <div v-else class="content-wrapper">
-      <a-carousel
-        ref="slider"
-        :after-change="currentSlideIndex"
-        class="carousel">
-        <div
-          v-for="slide of store.state.user.userTasks"
-          :key="slide.id"
-          class="slides">
+      <a-carousel ref="slider" :after-change="currentSlideIndex" class="carousel">
+        <div v-for="slide of store.state.user.userTasks" :key="slide.id" class="slides">
           <div class="slides-img">
             <img :src="slide.image" :alt="slide.eng" />
           </div>
@@ -26,26 +20,50 @@
       </a-carousel>
       <div class="form-input">
         <textarea
-          :inert="store.state.user.userAnswers[currentSlide].value.length"
+          :inert="
+            store.state.user.userAnswers[currentSlide].value.length ||
+            dayjs(store.state.user.currentDate).format('YYYY-MM-DD') !==
+              dayjs(new Date()).format('YYYY-MM-DD')
+          "
           v-model="transcriptText"
           class="form-input-area"
           rows="1"
           maxlength="100"
-          placeholder="請造句" />
+          placeholder="請造句"
+        />
+        <!-- :class="[
+            'form-input-btn',
+            {
+              disabled:
+                store.state.user.userAnswers[currentSlide].value.length ||
+                dayjs(store.state.user.currentDate).format('YYYY-MM-DD') !== 
+                  dayjs(new Date()).format('YYYY-MM-DD'),
+            },
+          ]" -->
         <SpeechToText
           @click="() => (isRecording = !isRecording)"
           v-model:transcriptText="transcriptText"
           :class="[
             'form-input-btn',
             {
-              disabled: store.state.user.userAnswers[currentSlide].value.length,
+              disabled:
+                store.state.user.userAnswers[currentSlide].value.length ||
+                dayjs(store.state.user.currentDate).format('YYYY-MM-DD') !==
+                  dayjs(new Date()).format('YYYY-MM-DD'),
             },
-          ]" />
+          ]"
+        />
       </div>
       <button
-        :disabled="store.state.user.userAnswers[currentSlide].value.length"
+        :disabled="
+          store.state.user.userAnswers[currentSlide].value.length ||
+          disabledSubmitBtn ||
+          dayjs(store.state.user.currentDate).format('YYYY-MM-DD') !==
+            dayjs(new Date()).format('YYYY-MM-DD')
+        "
         @click="submitTask"
-        class="submit-button">
+        class="submit-button"
+      >
         提交
       </button>
     </div>
@@ -53,17 +71,24 @@
 </template>
 
 <script setup>
-import { ref, watch, onMounted } from "vue";
+import { ref, watch, onMounted, computed } from "vue";
 import { useStore } from "vuex";
 import { notify } from "@kyvg/vue3-notification";
 
-import AreaInput from "@/components/UI/AreaInput.vue";
 import SpeechToText from "@/components/UI/SpeechToText.vue";
 import Loader from "@/components/UI/Loader.vue";
 import request from "@/config/request";
+import dayjs from "dayjs";
 
 const store = useStore();
 const transcriptText = ref(store.state.user.userAnswers[0].value);
+const disabledSubmitBtn = computed(() => {
+  if (transcriptText.value) {
+    return false;
+  } else {
+    return true;
+  }
+});
 const slider = ref(null);
 const isRecording = ref(false);
 const currentSlide = ref(0);
@@ -84,39 +109,14 @@ const currentSlideIndex = (current) => {
 };
 
 const submitTask = async () => {
-  try {
-    const { data } = await request.put(
-      "linesstoryfn/task",
-      { [userAnswers[currentSlide.value]]: transcriptText.value },
-      {
-        headers: {
-          token: store.state.token,
-        },
-      }
-    );
-
-    if (data.error) {
-      console.log(data.error);
-      return;
-    }
-
-    if (data.data.completed) {
-      store.commit("user/setIsTasksCompleted", true);
-      notify({
-        title: "All done!",
-        text: "Next tasks will be available tomorrow",
-      });
-    }
-
-    const newAnswers = [...store.state.user.userAnswers];
-    newAnswers[currentSlide.value].value = transcriptText.value;
-
-    store.commit("user/setUserAnswers", newAnswers);
-    console.log(store.state.user.userAnswers);
-    slider.value.next();
-  } catch (error) {
-    console.log("error");
-  }
+  store
+    .dispatch("user/submitTask", {
+      [userAnswers[currentSlide.value]]: transcriptText.value,
+      slide: currentSlide.value,
+    })
+    .then((data) => {
+      data ? slider.value.next() : null;
+    });
 };
 
 watch(
@@ -125,7 +125,7 @@ watch(
     if (n.length) {
       transcriptText.value = n;
     }
-  }
+  },
 );
 watch(
   () => store.state.user.isLoaded,
@@ -139,11 +139,7 @@ watch(
       }
       transcriptText.value = store.state.user.userAnswers[0].value;
 
-      const idx = store.state.user.userAnswers.findIndex(
-        (el) => !el.value.length
-      );
-
-      console.log(idx);
+      const idx = store.state.user.userAnswers.findIndex((el) => !el.value.length);
 
       if (idx !== -1) {
         setTimeout(() => {
@@ -152,7 +148,7 @@ watch(
         }, 0);
       }
     }
-  }
+  },
 );
 
 onMounted(() => {
@@ -175,6 +171,15 @@ onMounted(() => {
     align-items: center;
   }
 }
+
+.history-answers {
+  display: flex;
+  justify-content: flex-end;
+  width: 100%;
+  margin-bottom: 15px;
+  padding-right: 20px;
+}
+
 .carousel {
   min-width: 0;
   width: 80%;
@@ -198,13 +203,13 @@ onMounted(() => {
     justify-content: center;
     position: relative;
     max-width: 300px;
-    min-height: 100px;
+    min-height: 120px;
     border-radius: 8px;
 
     & > img {
       position: absolute;
       width: 100%;
-      height: auto;
+      height: 100%;
       object-fit: cover;
       object-position: center;
     }

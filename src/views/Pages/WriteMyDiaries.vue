@@ -1,9 +1,11 @@
 <template>
   <section class="content">
     <div class="voice-message">
-      <svg class="voice-message-icon">
-        <use href="@/assets/symbol-defs.svg#icon-voices" />
-      </svg>
+      <SpeechToText
+        @click="isRecording = !isRecording"
+        class="voice-message-icon"
+        v-model:transcriptText="userTranscriptText"
+      />
       <div class="description">
         <h3 class="description-title">請用語音輸入中文日誌</h3>
         <div class="description-timeline">
@@ -17,9 +19,7 @@
     <div class="chats">
       <div class="chats-ai chat">
         <div class="chats-wrapper ai-inner">
-          <p class="chats-ai-text">
-            今天是放假的第一天，早上我去學校領新書和成績單（語文99，數學100）。語文一道題答錯了，所以沒有得到100分。我很傷心，因為這次是這學期最後一次考試。
-          </p>
+          <p v-html="userTranscriptText" class="chats-ai-text"></p>
         </div>
         <div class="chats-options">
           <span class="chats-btn">From: 中文</span>
@@ -27,14 +27,10 @@
       </div>
       <div class="chats-user chat">
         <div class="chats-wrapper user-inner">
-          <p class="chats-user-text">
-            Today is the first day of the holiday. I went to school in the
-            morning to pick up my new book and report card (Chinese 99,
-            Mathematics 100).
-          </p>
+          <p v-html="aiTranscriptText" class="chats-user-text"></p>
         </div>
         <div class="chats-options">
-          <svg class="chats-icon">
+          <svg @click="togglePlayStop" class="chats-icon">
             <use href="@/assets/symbol-defs.svg#icon-horn" />
           </svg>
           <span class="chats-btn">To: English</span>
@@ -42,9 +38,10 @@
       </div>
     </div>
     <div class="voice-message">
-      <svg class="voice-message-icon">
-        <use href="@/assets/symbol-defs.svg#icon-voices" />
-      </svg>
+      <SpeechToText
+        class="voice-message-icon"
+        v-model:transcriptText="aiTranscriptText"
+      />
       <div class="description">
         <h3 class="description-title">請念出翻譯後的英文日誌後上傳</h3>
         <div class="description-timeline">
@@ -54,12 +51,138 @@
           <span class="description-timeline-time">00:43</span>
         </div>
       </div>
-      <span class="voice-message-submit">提交</span>
+      <span @click="submitDiary" class="voice-message-submit">提交</span>
     </div>
   </section>
 </template>
 
-<script setup></script>
+<script setup>
+import { ref, onMounted, watch } from "vue";
+import { useStore } from "vuex";
+import { notify } from "@kyvg/vue3-notification";
+import { airpetFetch } from "@/utils/airpetFetcher";
+import { useSpeechSynthesis } from "@vueuse/core";
+import SpeechToText from "@/components/UI/SpeechToText.vue";
+import request from "@/config/request";
+
+const store = useStore();
+
+let speechObj = null;
+const TOKEN = ref("");
+const isRecording = ref(false);
+const aiTranscriptText = ref("");
+const userTranscriptText = ref("");
+const diary = ref([]);
+
+const getToken = async () => {
+  try {
+    const data = await airpetFetch("token", {
+      username: process.env.VUE_APP_AIRPET_USERNAME,
+      password: process.env.VUE_APP_AIRPET_PASSWORD,
+    });
+
+    TOKEN.value = data.access;
+  } catch (error) {
+    console.log(error);
+  }
+};
+
+const getDiary = async () => {
+  try {
+    const { data } = await request.get("/diary", {
+      headers: {
+        token: store.state.token,
+      },
+    });
+
+    if (data.error) {
+      notify({
+        title: "Error",
+        text: data.message,
+      });
+      return;
+    }
+
+    userTranscriptText.value = data.data.chiText;
+    aiTranscriptText.value = data.data.enText;
+  } catch (error) {
+    console.log(error);
+    console.log("error");
+  }
+};
+
+const submitDiary = async () => {
+  try {
+    const { data } = await request.post(
+      "/diary",
+      {
+        chiText: userTranscriptText.value,
+        enText: aiTranscriptText.value,
+      },
+      {
+        headers: {
+          token: store.state.token,
+        },
+      },
+    );
+
+    if (data.error) {
+      notify({
+        title: "Error",
+        text: data.message,
+      });
+      return;
+    }
+
+    console.log(data);
+  } catch (error) {
+    console.log(error);
+    console.log("error");
+  }
+};
+
+const listenEngText = () => {
+  speechObj = useSpeechSynthesis(aiTranscriptText.value, {
+    lang: "en-US",
+    pitch: 1,
+    rate: 1,
+    volume: 1,
+  });
+  speechObj.speak();
+};
+
+const togglePlayStop = () => {
+  if (speechObj === null) {
+    listenEngText();
+  } else if (speechObj.isPlaying) {
+    speechObj.stop();
+    speechObj = null;
+  }
+};
+
+watch(
+  () => isRecording.value,
+  async (n, o) => {
+    if (!n) {
+      if (!TOKEN.value) {
+        await getToken();
+      }
+
+      const translatedText = await airpetFetch(
+        "text-to-speech",
+        { text: "你好" },
+        TOKEN.value,
+      );
+
+      aiTranscriptText.value = translatedText.translated_text;
+    }
+  },
+);
+
+onMounted(() => {
+  getDiary();
+});
+</script>
 
 <style scoped lang="scss">
 .content {

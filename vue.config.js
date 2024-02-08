@@ -1,12 +1,5 @@
 const { defineConfig } = require("@vue/cli-service");
 module.exports = defineConfig({
-  // chainWebpack: (config) => {
-  //   config.module
-  //     .rule("svg")
-  //     .test(/\.svg$/)
-  //     .use("vue-svg-loader")
-  //     .loader("vue-svg-loader");
-  // },
   transpileDependencies: true,
   devServer: {
     client: {
@@ -22,6 +15,17 @@ module.exports = defineConfig({
           return true;
         },
       },
+    },
+  },
+  pwa: {
+    name: "AI Professor 'Yi'",
+    themeColor: "#ffffff",
+    msTileColor: "#000000",
+    appleMobileWebAppCapable: "yes",
+    appleMobileWebAppStatusBarStyle: "black",
+    workboxPluginMode: "InjectManifest",
+    workboxOptions: {
+      swSrc: "./src/registerServiceWorker.js",
     },
   },
 });

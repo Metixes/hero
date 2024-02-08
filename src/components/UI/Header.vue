@@ -1,18 +1,22 @@
 <template>
   <header class="parent-header">
     <div @click="router.push('/dashboard-links')">
-      <!-- <svg class="main-logo" height="40" width="180">
-        <use href="@/assets/sprite.svg#logo"></use>
-      </svg> -->
       <svg class="main-logo" height="40" width="180">
         <use href="@/assets/symbol-defs.svg#icon-logo"></use>
       </svg>
     </div>
     <div class="user">
       <div @click="toShowMenu" class="user-level">
-        <svg class="user-level-icon">
-          <use href="@/assets/symbol-defs.svg#icon-star"></use>
-        </svg>
+        <img
+          width="40"
+          height="40"
+          :src="
+            require(`@/assets/ranks/rank-${
+              store.state.user.userData.rating.rating || 1
+            }.png`)
+          "
+          :alt="store.state.user.userData.rating.rating"
+        />
         <span class="user-level-points">{{
           store.state.user.userData.rating.rating
         }}</span>
@@ -22,7 +26,7 @@
         <div class="user-time">
           <p class="user-time-text">在線時間</p>
           :
-          <p class="user-time-online">60min</p>
+          <p class="user-time-online">{{ timeOnline }}</p>
         </div>
       </div>
     </div>
@@ -30,16 +34,44 @@
 </template>
 
 <script setup>
+import { ref, onMounted } from "vue";
 import { useStore } from "vuex";
 import { useRouter } from "vue-router";
 
 const router = useRouter();
 const store = useStore();
 
+const timeOnline = ref("1 sec");
+
 const toShowMenu = () => {
   store.commit("user/setShowMenu", !store.state.user.showMenu);
   console.log(store.state.user.showMenu);
 };
+
+let startTime = new Date();
+const displayElapsedTime = () => {
+  let currentTime = new Date();
+  let elapsedTimeInSeconds = Math.floor((currentTime - startTime) / 1000);
+  console.log("here");
+  if (elapsedTimeInSeconds < 60) {
+    timeOnline.value = elapsedTimeInSeconds + " sec";
+  } else if (elapsedTimeInSeconds < 3600) {
+    let minutes = Math.floor(elapsedTimeInSeconds / 60);
+    timeOnline.value = minutes + " min";
+  } else if (elapsedTimeInSeconds < 86400) {
+    let hours = Math.floor(elapsedTimeInSeconds / 3600);
+    timeOnline.value = hours + " h";
+  } else {
+    let days = Math.floor(elapsedTimeInSeconds / 86400);
+    timeOnline.value = days + " days";
+  }
+};
+
+onMounted(() => {
+  setInterval(() => {
+    displayElapsedTime();
+  }, 1000);
+});
 </script>
 
 <style scoped lang="scss">
@@ -66,20 +98,22 @@ const toShowMenu = () => {
 .user {
   display: flex;
   align-items: center;
+  margin-right: 10px;
 
   &-level {
     position: relative;
-
-    &-icon {
-      max-width: 40px;
-      max-height: 40px;
-    }
+    max-width: 40px;
+    max-height: 40px;
 
     &-points {
       position: absolute;
-      left: calc(50% - 5px);
-      bottom: calc(50% - 9px);
-      font-size: 18px;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+
+      font-size: 15px;
+      font-weight: bold;
+      color: var(--gr-grey);
       cursor: default;
     }
   }
@@ -101,6 +135,8 @@ const toShowMenu = () => {
       font-family: "DFYuanMedium";
     }
     &-online {
+      width: 20px;
+      white-space: nowrap;
     }
   }
 }
