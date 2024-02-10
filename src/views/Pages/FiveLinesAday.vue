@@ -13,9 +13,17 @@
             <h3 class="slides-task-first">{{ slide.eng }}</h3>
             <h3 class="slides-task-second">{{ slide.chi }}</h3>
           </div>
-          <p class="slides-question">
-            {{ slide.sentence_eng }}
-          </p>
+          <div class="slides-question">
+            <p class="slides-question-text">
+              {{ slide.sentence_eng }}
+            </p>
+            <svg
+              @click="listenTranslate(slide.sentence_audio)"
+              class="slides-question-translation-icon"
+            >
+              <use href="@/assets/symbol-defs.svg#icon-horn" />
+            </svg>
+          </div>
         </div>
       </a-carousel>
       <div class="form-input">
@@ -119,6 +127,11 @@ const submitTask = async () => {
     });
 };
 
+const listenTranslate = (audio) => {
+  const audioObj = new Audio(audio);
+  audioObj.play();
+};
+
 watch(
   () => transcriptText.value,
   (n, o) => {
@@ -131,12 +144,6 @@ watch(
   () => store.state.user.isLoaded,
   (n, o) => {
     if (n) {
-      if (store.state.user.isTasksCompleted) {
-        notify({
-          title: "All done!",
-          text: "Next tasks will be available tomorrow",
-        });
-      }
       transcriptText.value = store.state.user.userAnswers[0].value;
 
       const idx = store.state.user.userAnswers.findIndex((el) => !el.value.length);
@@ -232,6 +239,21 @@ onMounted(() => {
   }
   &-question {
     margin-top: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+
+    &-translation-icon {
+      width: 22px;
+      height: 22px;
+      padding: 4px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+
+      border-radius: 50%;
+      background-color: #8898df;
+    }
   }
 }
 

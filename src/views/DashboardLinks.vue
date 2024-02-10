@@ -1,40 +1,42 @@
 <template>
   <div class="content">
     <MainHeader />
-    <img
-      class="content-clouds-bg"
-      src="../assets/dashboard-links/bg/clouds.png"
-      alt="clouds"
-    />
-    <div class="first-section">
+    <div class="links-wrapper">
       <img
-        id="home-work"
-        @click="redirectToClasses"
-        class="bg"
-        src="../assets/dashboard-links/first-section/first-link.png"
-        alt="link"
+        class="content-clouds-bg"
+        src="../assets/dashboard-links/bg/clouds.png"
+        alt="clouds"
       />
-      <span class="first-section-title">問功課</span>
-    </div>
-    <div class="second-section">
-      <img
-        id="five-lines"
-        @click="redirectToClasses"
-        class="bg"
-        src="../assets/dashboard-links/second-section/second-link.png"
-        alt="link"
-      />
-      <span class="second-section-title">認識宜蘭</span>
-    </div>
-    <div class="third-section">
-      <img
-        id="story-writer"
-        @click="redirectToClasses"
-        class="bg"
-        src="../assets/dashboard-links/third-section/third-link.png"
-        alt="link"
-      />
-      <span class="third-section-title">學英語</span>
+      <div class="first-section">
+        <img
+          id="home-work"
+          @click="redirectToClasses"
+          class="bg"
+          src="../assets/dashboard-links/first-section/first-link.png"
+          alt="link"
+        />
+        <span class="first-section-title">問功課</span>
+      </div>
+      <div class="second-section">
+        <img
+          id="five-lines"
+          @click="redirectToClasses"
+          class="bg"
+          src="../assets/dashboard-links/second-section/second-link.png"
+          alt="link"
+        />
+        <span class="second-section-title">認識宜蘭</span>
+      </div>
+      <div class="third-section">
+        <img
+          id="story-writer"
+          @click="redirectToClasses"
+          class="bg"
+          src="../assets/dashboard-links/third-section/third-link.png"
+          alt="link"
+        />
+        <span class="third-section-title">學英語</span>
+      </div>
     </div>
   </div>
 </template>
@@ -81,20 +83,30 @@ const redirectToClasses = (event) => {
   background-color: #fdfdfe;
 
   &-clouds-bg {
-    max-width: 170px;
+    width: 180px;
     position: absolute;
-    top: 20%;
-    right: 40px;
+    top: 22%;
+    right: 30px;
     z-index: 4;
+
+    @media (width >= 400px) {
+      top: 10%;
+    }
+  }
+
+  .links-wrapper {
+    position: relative;
+    margin: 0 auto;
+    max-width: 620px;
+    height: 90%;
   }
 
   .first-section {
-    max-width: 210px;
-    width: 100%;
+    width: clamp(220px, 55%, 280px);
     position: absolute;
-    top: 25%;
+    bottom: 38%;
     left: 5px;
-    z-index: 3;
+    z-index: 1;
     border-radius: 50%;
 
     &-wrapper {
@@ -103,47 +115,22 @@ const redirectToClasses = (event) => {
 
     &-title {
       position: absolute;
-      left: 36%;
-      top: 4%;
+      left: 35%;
+      top: 3%;
       letter-spacing: 0.2rem;
       font-size: 14px;
       color: var(--white);
-    }
 
-    @media (width >= 480px) {
-      max-width: 280px;
-    }
-
-    @media (width >= 600px) {
-      left: 65px;
-    }
-
-    @media (width >= 640px) {
-      left: 85px;
-    }
-
-    @media (width >= 720px) {
-      left: 140px;
-    }
-
-    @media (width >= 768px) {
-      max-width: 300px;
-      top: 20%;
-    }
-
-    @media (width >= 1024px) {
-      max-width: 400px;
-      top: 15%;
-      left: 160px;
+      font-family: "HanWangYenHeavy";
+      font-size: 16px;
     }
   }
 
   .second-section {
-    max-width: 205px;
-    width: 100%;
+    width: clamp(200px, 50%, 260px);
     position: absolute;
     right: 5px;
-    top: 40%;
+    bottom: 22%;
     z-index: 2;
     border-radius: 50%;
 
@@ -155,28 +142,17 @@ const redirectToClasses = (event) => {
       letter-spacing: 0.2rem;
       color: var(--white);
       transform: rotateZ(350deg);
-    }
 
-    @media (width >= 480px) {
-      max-width: 285px;
-      top: 30%;
-    }
-
-    @media (width >= 768px) {
-      right: 80px;
-    }
-
-    @media (width >= 1024px) {
-      max-width: 385px;
+      font-family: "HanWangYenHeavy";
+      font-size: 16px;
     }
   }
 
   .third-section {
-    max-width: 280px;
-    width: 100%;
+    width: clamp(300px, 75%, 370px);
     position: absolute;
     left: 5px;
-    bottom: 5%;
+    bottom: 0;
     z-index: 3;
     border-radius: 50%;
 
@@ -187,18 +163,9 @@ const redirectToClasses = (event) => {
       font-size: 14px;
       letter-spacing: 0.2rem;
       color: var(--white);
-    }
 
-    @media (width >= 480px) {
-      max-width: 355px;
-    }
-
-    @media (width >= 768px) {
-      left: 80px;
-    }
-
-    @media (width >= 1024px) {
-      max-width: 455px;
+      font-family: "HanWangYenHeavy";
+      font-size: 16px;
     }
   }
 

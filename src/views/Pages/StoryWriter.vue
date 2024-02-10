@@ -6,8 +6,9 @@
         <div
           v-for="task of store.state.user.userTasks"
           :key="task.id"
-          @click="listenTasks(task.audio)"
+          @click="listenEngText(task.audio)"
           class="translation-items"
+          :style="{ background: generateRandomColor() }"
         >
           <span class="translation-btn">{{ task.eng }} {{ task.chi }} </span>
           <svg class="translation-icon-horn">
@@ -16,22 +17,31 @@
         </div>
       </div>
       <div class="server-area">
-        <textarea class="server-area-input" rows="1" />
+        <textarea readonly v-model="areaText" class="server-area-input" rows="1" />
         <div class="server-area-options">
+          <a-spin v-if="isLoadingAudio" :class="[{ disabled: isLoadingAudio }]" />
           <svg
-            class="server-area-options-icon"
-            xmlns="http://www.w3.org/2000/svg"
-            width="25"
-            height="25"
-            viewBox="0 0 4.923 4.025"
+            v-else
+            @click="listenEngText(aiAudio)"
+            :class="['server-area-options-icon', { disabled: !areaText.length }]"
           >
-            <path
-              d="M597.405,687.24a.272.272,0,0,1,.168.252v3.282a.272.272,0,0,1-.326.268.269.269,0,0,1-.14-.074l-1.014-1.014h-.707a.273.273,0,0,1-.274-.274v-1.094a.273.273,0,0,1,.274-.273h.707l1.014-1.014a.272.272,0,0,1,.3-.059Zm1.442-.04a.272.272,0,0,1,.387,0,2.733,2.733,0,0,1,0,3.867.274.274,0,0,1-.387-.387,2.187,2.187,0,0,0,0-3.094.273.273,0,0,1,0-.386Zm-.774.773a.262.262,0,0,1,.089-.059.27.27,0,0,1,.105-.021.274.274,0,0,1,.1.021.248.248,0,0,1,.088.059,1.641,1.641,0,0,1,0,2.321.274.274,0,0,1-.387-.387,1.092,1.092,0,0,0,0-1.547.294.294,0,0,1-.059-.089.27.27,0,0,1-.021-.1.265.265,0,0,1,.021-.1.271.271,0,0,1,.059-.089Z"
-              transform="translate(-595.112 -687.119)"
-              fill="#fff"
-            />
+            <use href="@/assets/symbol-defs.svg#icon-horn" />
           </svg>
-          <span class="server-area-options-gpt">ChatGPT範例</span>
+          <a-popconfirm
+            :disabled="
+              dayjs(store.state.user.currentDate).format('YYYY-MM-DD') !==
+              dayjs(new Date()).format('YYYY-MM-DD')
+            "
+            title="Using hint will cost 1 star"
+            ok-text="Agree"
+            cancel-text="Cancel"
+            placement="bottomRight"
+            @confirm="agreeToHelp"
+            @cancel="cancel"
+            :class="{ disabled: areaText.length }"
+          >
+            <span class="server-area-options-gpt">ChatGPT範例</span>
+          </a-popconfirm>
         </div>
       </div>
       <div class="client-area">
@@ -57,8 +67,9 @@
         />
       </div>
       <button
-        @click="submitUserAnswer"
         :disabled="store.state.user.userStoryAnswer.length || disabledSubmitBtn"
+        @click="submitUserAnswer"
+        @keydown.enter="submitUserAnswer"
         class="submit-button"
       >
         提交
@@ -71,6 +82,8 @@
 import { ref, onMounted, watch, computed } from "vue";
 import { useStore } from "vuex";
 import { notify } from "@kyvg/vue3-notification";
+import { airpetFetch } from "@/utils/airpetFetcher.js";
+import { useSpeechSynthesis } from "@vueuse/core";
 
 import Loader from "@/components/UI/Loader.vue";
 import SpeechToText from "@/components/UI/SpeechToText.vue";
@@ -78,8 +91,13 @@ import request from "@/config/request";
 import dayjs from "dayjs";
 
 const store = useStore();
-
+let speechObj = null;
+const isLoadingAudio = ref(false);
+const aiAudio = ref(null);
 const transcriptText = ref(store.state.user.userStoryAnswer);
+const TOKEN = ref("");
+const areaText = ref("");
+const aiTextValue = ref("");
 const isRecording = ref(false);
 const disabledSubmitBtn = computed(() => {
   if (transcriptText.value) {
@@ -89,15 +107,149 @@ const disabledSubmitBtn = computed(() => {
   }
 });
 
-const listenTasks = (audio) => {
+console.log(
+  dayjs(store.state.user.currentDate).format("YYYY-MM-DD") !==
+    dayjs(new Date()).format("YYYY-MM-DD"),
+);
+
+const listenEngText = (audio) => {
   const audioObj = new Audio(audio);
   audioObj.play();
+};
+
+const getEngAudio = async (engText) => {
+  try {
+    isLoadingAudio.value = true;
+
+    const data = await airpetFetch("text-to-speech", { text: engText }, TOKEN.value);
+
+    isLoadingAudio.value = false;
+    aiAudio.value = data.audio;
+  } catch (error) {
+    console.log(error);
+  }
+  // var msg = new SpeechSynthesisUtterance();
+  // var voices = window.speechSynthesis.getVoices();
+  // msg.voice = voices[10];
+  // msg.volume = 1; // From 0 to 1
+  // msg.rate = 1; // From 0.1 to 10
+  // msg.pitch = 2; // From 0 to 2
+  // msg.text = aiTextValue.value;
+  // msg.lang = "en";
+  // window.webkitSpeechSynthesis.speak(msg);
+  // textContent.split(".").forEach((text) => {
+  //   const trimmed = text.trim();
+  //   if (trimmed) {
+  //     const U = getUtterance(target, text);
+  //     speechSynthesis.speak(U);
+  //   }
+  // });
+  // speechObj = useSpeechSynthesis(aiTextValue.value.trim(), {
+  //   lang: "en-US",
+  //   pitch: 1,
+  //   rate: 1,
+  //   volume: 1,
+  // });
+  // speechObj.speak();
+};
+
+const getToken = async () => {
+  try {
+    const data = await airpetFetch("token", {
+      username: process.env.VUE_APP_AIRPET_USERNAME,
+      password: process.env.VUE_APP_AIRPET_PASSWORD,
+    });
+
+    TOKEN.value = data.access;
+  } catch (error) {
+    console.log(error);
+  }
+};
+
+const askForHelpAi = async () => {
+  try {
+    if (!TOKEN.value) {
+      await getToken();
+    }
+
+    const engWords = [];
+
+    store.state.user.userTasks.forEach((el) => {
+      if (el.eng) {
+        engWords.push(el.eng);
+      }
+    });
+
+    const translatedEngText = await airpetFetch(
+      "word-to-para",
+      { text: engWords.join(", "), length: 100 },
+      TOKEN.value,
+    );
+
+    aiTextValue.value = translatedEngText.response;
+
+    await getEngAudio(translatedEngText.response);
+  } catch (error) {
+    console.log(error);
+  }
+};
+
+const decrementUserStar = async () => {
+  try {
+    const { data } = await request.put(
+      "linesstoryfn/decrementstar",
+      {},
+      {
+        headers: {
+          token: store.state.token,
+        },
+      },
+    );
+
+    if (data.error) {
+      console.log("error");
+      return;
+    }
+
+    // console.log(data);
+
+    store.commit("user/setUserData", { ...store.state.user.userData, rating: data.data });
+    // console.log(store.state.user.userData);
+  } catch (error) {
+    console.log(error);
+  }
+};
+
+const agreeToHelp = () => {
+  if (!store.state.user.userData.rating.stars) {
+    notify({
+      title: "Error",
+      text: "You don't have enough stars.",
+    });
+    return;
+  }
+
+  areaText.value = aiTextValue.value;
+  decrementUserStar();
 };
 
 const submitUserAnswer = () => {
   store.dispatch("user/submitTask", {
     storyAnswer: transcriptText.value,
   });
+};
+
+const generateRandomColor = () => {
+  const red = Math.floor(Math.random() * (192 - 25) + 65);
+  const green = Math.floor(Math.random() * (192 - 25) + 65);
+  const blue = Math.floor(Math.random() * (192 - 25) + 65);
+
+  return (
+    "#" +
+    red.toString(16).toUpperCase().padStart(2, "0") +
+    green.toString(16).toUpperCase().padStart(2, "0") +
+    blue.toString(16).toUpperCase().padStart(2, "0")
+  );
 };
 
 watch(
@@ -128,6 +280,7 @@ onMounted(async () => {
   if (!store.state.user.userTasks.length) {
     await store.dispatch("user/getTasks");
   }
+  await askForHelpAi();
 });
 </script>
 
@@ -149,6 +302,7 @@ onMounted(async () => {
   width: 80%;
   display: flex;
   align-items: center;
+  justify-content: center;
   flex-wrap: wrap;
   gap: 10px 5px;
 
@@ -160,7 +314,6 @@ onMounted(async () => {
     gap: 5px;
 
     border-radius: 18px;
-    background-color: #9f3fde;
 
     cursor: pointer;
   }
@@ -224,7 +377,10 @@ onMounted(async () => {
     gap: 5px;
     bottom: 10px;
     right: 10px;
+
     &-icon {
+      max-width: 25px;
+      max-height: 25px;
       padding: 4px;
 
       border-radius: 50%;
@@ -237,6 +393,8 @@ onMounted(async () => {
       border: 1px solid var(--white);
       border-radius: 14px;
       background: transparent;
+
+      cursor: pointer;
     }
   }
 }

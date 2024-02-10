@@ -1494,7 +1494,9 @@
         @keyup.enter="userInputValue"
         class="to-send-input"
         autofocus
-        type="text"
+        :type="inputType"
+        min="1"
+        max="12"
       />
 
       <div :inert="isRecording" @click="userInputValue" class="to-send-message">
@@ -1526,6 +1528,7 @@
         v-model:transcriptText="transcriptText"
         class="to-send-voice"
       />
+      <button v-show="isLoginError" @click="retryLogin" class="reset-login">Retry</button>
     </div>
   </div>
 </template>
@@ -1553,6 +1556,10 @@ const scrollChat = useScroll(refChart);
 const isRecording = ref(false);
 const transcriptText = ref("");
 
+const inputType = ref("text");
+
+const isLoginError = ref(false);
+
 let counter = ref(0);
 const serverMessages = [
   "可以告訢我你的全名嗎？",
@@ -1565,7 +1572,7 @@ const serverMessages = [
 const messages = ref([{ name: "server", value: serverMessages[counter.value] }]);
 const inputValue = ref("");
 const userAuthorizationKeys = [
-  "first_name",
+  "name",
   // "last_name",
   "school_name",
   // "school_code",
@@ -1577,7 +1584,7 @@ const userData = reactive({
   school_name: "",
   school_year: "",
   class_code: "",
-  first_name: "",
+  name: "",
   // last_name: "",
 });
 
@@ -1609,20 +1616,17 @@ const chatSize = computed(() => {
 });
 
 const signup = async () => {
-  console.log("userData", userData);
-
   try {
     const { data } = await request.post("auth", {
-      school_code: "123",
-      school_name: "test",
-      school_year: "2222",
-      class_code: "test123",
-      first_name: "tip",
-      last_name: "ppc",
+      school_name: userData.school_name.toUpperCase(),
+      school_year: +userData.school_year,
+      class_code: userData.class_code.toUpperCase(),
+      name: userData.name.toUpperCase(),
     });
 
     if (data.error) {
       messages.value = [{ name: "server", value: data.message }];
+      isLoginError.value = true;
       return;
     }
 
@@ -1634,13 +1638,42 @@ const signup = async () => {
 
     router.push("/welcome-page");
   } catch (error) {
-    messages.value = [{ name: "server", value: error.message }];
+    switch (error.response.status) {
+      case 404:
+        messages.value = [{ name: "server", value: "Student not found. Try again" }];
+        break;
+
+      case 500:
+        messages.value = [
+          { name: "server", value: "Something went wrong. Try again latter" },
+        ];
+
+        break;
+
+      default:
+        messages.value = [
+          { name: "server", value: "Something went wrong. Try again latter" },
+        ];
+        break;
+    }
+    isLoginError.value = true;
   }
+};
+
+const retryLogin = () => {
+  counter.value = 0;
+  messages.value = [{ name: "server", value: serverMessages[counter.value] }];
+  for (const key in userData) {
+    userData[key] = "";
+  }
+  isLoginError.value = false;
 };
 
 watch(
   () => counter.value,
   (n, o) => {
+    n === 2 ? (inputType.value = "number") : (inputType.value = "text");
+
     if (n === serverMessages.length) {
       signup();
     }
@@ -1804,5 +1837,39 @@ watch(
 
     cursor: pointer;
   }
+}
+
+/* Chrome, Safari, Edge, Opera */
+input::-webkit-outer-spin-button,
+input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+/* Firefox */
+input[type="number"] {
+  -moz-appearance: textfield;
+}
+
+.reset-login {
+  position: absolute;
+  top: 0;
+  left: 0;
+
+  border: none;
+  outline: none;
+
+  border-radius: 30px;
+
+  background: var(--blue);
+  color: var(--gr-white);
+
+  font-size: 18px;
+
+  width: 100%;
+
+  padding: 10px 0;
+
+  cursor: pointer;
 }
 </style>

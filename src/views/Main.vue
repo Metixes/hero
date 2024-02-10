@@ -8,8 +8,19 @@
       <Header />
       <div class="tab-header">
         <div>
-          <p class="tab-header-title">{{ tabHeaders.title }}</p>
-          <p class="tab-header-subtitle">{{ tabHeaders.chiTitle }}</p>
+         <div>
+           <p class="tab-header-title">{{ tabHeaders.title }}</p>
+           <p class="tab-header-subtitle">{{ tabHeaders.chiTitle }}</p>
+         </div>
+
+       <a-select
+        v-if="route.path === '/main/homework-helper'"
+        ref="select"
+        v-model:value="selectedSubject"
+        style="width: 150px; margin-left: 10px"
+        :options="subjectList"
+        placeholder="請選擇科目"
+       ></a-select>
         </div>
         <div v-if="showDataPicker" class="history-answers">
           <a-date-picker
@@ -20,12 +31,16 @@
             @change="onSelectDate"
           />
         </div>
+       <div v-if="route.path === '/main/homework-helper'" class="hw-remaining">
+          <p v-if="!childData.chattingAbility">Will be available after: {{ childData.remainingTimeDay }}</p>
+          <p v-else>Time left: {{ childData.remainingTime90 }}</p>
+        </div>
       </div>
     </div>
     <div class="tab-view">
       <router-view v-slot="{ Component }">
         <transition name="scale" mode="out-in">
-          <component :is="Component" />
+          <component :subject="selectedSubject" @childDataEmit="getChildData" :is="Component" />
         </transition>
       </router-view>
     </div>
@@ -34,7 +49,7 @@
 </template>
 
 <script setup>
-import { ref, reactive, watch, computed } from "vue";
+import { ref, reactive, watch, computed, onMounted } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { useStore } from "vuex";
 import SideBar from "@/components/UI/SideBar.vue";
@@ -43,6 +58,27 @@ import CompletedTasks from "@/components/UI/CompletedTasks.vue";
 import Header from "@/components/UI/Header.vue";
 import FooterNav from "@/components/UI/FooterNav.vue";
 import dayjs from "dayjs";
+import { subjects } from "@/utils/functionsUtils/subjects.js";
+
+const childData = reactive({
+  chattingAbility: false,
+  remainingTimeDay: "",
+  remainingTime90: "",
+});
+
+const selectedSubject = ref("國文");
+const subjectList = reactive(subjects);
+
+const getChildData = ({ component, data }) => {
+  switch (component) {
+    case "hw-helper":
+      Object.keys(data).forEach((key) => (childData[key] = data[key]));
+      break;
+
+    default:
+      break;
+  }
+};
 
 const route = useRoute();
 const router = useRoute();
@@ -136,6 +172,11 @@ watch(
   justify-content: space-between;
   gap: 5px;
 
+  & > div {
+    display: flex;
+    align-items: flex-end;
+  }
+
   &-title {
     color: #5c6b8a;
   }
@@ -191,5 +232,10 @@ watch(
 .scale-leave-to {
   opacity: 0;
   transform: scale(0.9);
+}
+
+.hw-remaining {
+  padding: 1px;
+  font-size: 12px;
 }
 </style>

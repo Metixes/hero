@@ -1,6 +1,6 @@
 <template>
   <section :class="['content', { show: showContent }]">
-    <div ref="modal" class="completed">
+    <div v-if="store.state.user.isTasksCompleted" ref="modal" class="completed">
       <img class="completed-bg" src="@/assets/level-up/completed.png" alt="level-up" />
       <div class="completed-points">
         <img
@@ -10,6 +10,16 @@
         />
         <span class="completed-points-text">我的金幣</span>
         <span class="completed-points-coins">350</span>
+      </div>
+    </div>
+    <div v-if="store.state.user.isTasksCompletedToday" ref="modal" class="completed">
+      <img
+        class="completed-bg"
+        src="@/assets/level-up/completed-today.png"
+        alt="level-up"
+      />
+      <div class="completed-points today">
+        <p>All done for today. Next tasks will be available tomorrow.</p>
       </div>
     </div>
   </section>
@@ -29,13 +39,13 @@ onClickOutside(modal, () => {
 });
 
 watch(
-  () => store.state.user.isTasksCompleted,
+  () => [store.state.user.isTasksCompleted, store.state.user.isTasksCompletedToday],
   (n, o) => {
-    if (n) {
+    if (n[0] || n[1]) {
       showContent.value = true;
       setTimeout(() => {
         showContent.value = false;
-      }, 2000);
+      }, 4000);
     }
   },
 );
@@ -51,7 +61,7 @@ watch(
   left: 0;
 
   background-color: rgba(118, 118, 118, 0.5);
-  z-index: 1;
+  z-index: 999;
   opacity: 0;
   visibility: hidden;
 
@@ -110,5 +120,15 @@ watch(
 .show {
   opacity: 1;
   visibility: visible;
+}
+
+.today {
+  max-width: 160px;
+  bottom: 90px;
+  left: 60px;
+
+  & > p {
+    text-align: center;
+  }
 }
 </style>

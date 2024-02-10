@@ -19,7 +19,6 @@
         </div>
       </div>
       <div class="user-level">
-        <!-- :format="() => returnUserLevel()" -->
         <a-progress
           type="circle"
           :showInfo="false"

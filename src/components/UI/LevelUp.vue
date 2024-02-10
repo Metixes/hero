@@ -38,6 +38,9 @@ watch(
   (n, o) => {
     if (n * 10 === 100) {
       showContent.value = true;
+      setTimeout(() => {
+        showContent.value = false;
+      }, 4000);
     }
   },
 );

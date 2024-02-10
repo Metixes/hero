@@ -52,7 +52,6 @@ let startTime = new Date();
 const displayElapsedTime = () => {
   let currentTime = new Date();
   let elapsedTimeInSeconds = Math.floor((currentTime - startTime) / 1000);
-  console.log("here");
   if (elapsedTimeInSeconds < 60) {
     timeOnline.value = elapsedTimeInSeconds + " sec";
   } else if (elapsedTimeInSeconds < 3600) {

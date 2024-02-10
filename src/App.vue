@@ -119,6 +119,4 @@ body {
   pointer-events: none;
   cursor: default;
 }
-.test {
-}
 </style>

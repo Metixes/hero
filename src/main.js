@@ -4,7 +4,7 @@ import App from "./App.vue";
 import "./registerServiceWorker";
 import router from "./router";
 import store from "./store";
-import directives from "./diractives/index.js";
+import directives from "./directives/index.js";
 
 //notification library
 import Notifications from "@kyvg/vue3-notification";

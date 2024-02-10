@@ -19,32 +19,38 @@ export const user = {
     },
     isLoaded: false,
     isTasksCompleted: false,
+    isTasksCompletedToday: false,
     showMenu: true,
     userTasks: [],
     userTaskId: "",
     userAnswers: [{ value: "" }],
     userStoryAnswer: "",
     currentDate: dayjs(new Date()),
-    // userDiaries: "",
-    // aiDiaries: "",
   }),
 
   getters: {
     getFullName: (state) => state.userData.first_name + " " + state.userData.last_name,
+
+    getUserData: (state) => {
+      return {
+        school_name: state.userData.school_name,
+        school_year: +state.userData.school_year,
+        student_name: state.userData.first_name + " " + state.userData.last_name,
+      };
+    },
   },
 
   mutations: {
     setUserData: (state, object) => (state.userData = object),
-    setShowMenu: (state, boolean) => (state.showMenu = boolean),
-    setIsLoaded: (state, boolean) => (state.isLoaded = boolean),
     setUserTasks: (state, array) => (state.userTasks = array),
     setUserAnswers: (state, array) => (state.userAnswers = array),
-    setUserStoryAnswer: (state, string) => (state.userStoryAnswer = string),
+    setShowMenu: (state, boolean) => (state.showMenu = boolean),
+    setIsLoaded: (state, boolean) => (state.isLoaded = boolean),
     setIsTasksCompleted: (state, boolean) => (state.isTasksCompleted = boolean),
+    setIsTasksCompletedToday: (state, boolean) => (state.isTasksCompletedToday = boolean),
+    setUserStoryAnswer: (state, string) => (state.userStoryAnswer = string),
     setCurrentDate: (state, string) => (state.currentDate = string),
     setUserTaskId: (state, string) => (state.userTaskId = string),
-    // setUserDiaries: (state, string) => (state.userDiaries = string),
-    // setAiDiaries: (state, string) => (state.aiDiaries = string),
   },
 
   actions: {
@@ -71,11 +77,15 @@ export const user = {
           return;
         }
 
+        if (data.data.completed) {
+          commit("setIsTasksCompleted", false);
+          commit("setIsTasksCompletedToday", data.data.completed);
+        }
+
         commit("setUserTasks", data.data.vocabs);
         commit("setUserTaskId", data.data.task_id);
         commit("setUserAnswers", data.data.answers);
         commit("setUserStoryAnswer", data.data.storyAnswer);
-        commit("setIsTasksCompleted", data.data.completed);
         commit("setIsLoaded", true);
       } catch (error) {
         notify({
@@ -107,11 +117,7 @@ export const user = {
           }
 
           if (data.data.completed) {
-            commit("setIsTasksCompleted", true);
-            notify({
-              title: "All done!",
-              text: "Next tasks will be available tomorrow",
-            });
+            commit("setIsTasksCompleted", data.data.completed);
           }
 
           if (requestData.hasOwnProperty("slide")) {
@@ -124,10 +130,7 @@ export const user = {
           }
 
           const newUserData = { ...state.userData, rating: data.data.rating };
-          // console.log("data", data.data);
-          // console.log("state", state.userData);
           commit("setUserData", newUserData);
-          // console.log("after change", state.userData);
           return resolve(true);
         } catch (error) {
           notify({

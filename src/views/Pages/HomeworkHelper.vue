@@ -1,8 +1,10 @@
 <template>
   <section class="homework-section">
     <div v-if="!dataLoaded" class="loader-container"><Loader /></div>
-    <div ref="chartRef" v-if="dataLoaded" class="chat-container">
-      <div v-intersection="getHistoryOnScroll" style="height: 1px"></div>
+    <div v-scroll-down ref="chartRef" v-if="dataLoaded" class="chat-container">
+      <div v-intersection="getHistoryOnScroll" class="intersection">
+        <a-spin v-if="!isNewMessagesLoaded" size="small" />
+      </div>
       <div v-for="(message, index) in chatMessages" :key="index">
         <div :class="[message.side === 'server' ? 'server-message' : 'user-message']">
           <div class="avatar">
@@ -35,10 +37,6 @@
           </div>
         </div>
       </div>
-    </div>
-    <div v-if="dataLoaded" class="hw-remaining">
-      <p v-if="!chattingAbility">Will be available after: {{ remainingTimeDay }}</p>
-      <p v-else>Time left: {{ remainingTime90 }}</p>
     </div>
     <div :class="[{ disabled: !dataLoaded || !chattingAbility }, 'input-container']">
       <div class="uploads">
@@ -77,6 +75,7 @@
           />
         </div>
       </div>
+      <button @click="startConversation" class="restart">Restart</button>
     </div>
 
     <VueCamera v-if="cameraOpened" @close="cameraOpened = false" @snapshot="getPhoto" />
@@ -98,22 +97,28 @@ import {
   timeUntil90Minutes,
 } from "../../utils/functionsUtils/homework.js";
 
-const TEST_USER = {
-  subject: "數學",
-  school_year: 5,
-  student_name: "yunfei ydes@ip",
-  action: "Start",
-};
+const emits = defineEmits(["childDataEmit"]);
 
-const chartRef = ref(null);
+const props = defineProps({
+  subject: {
+    type: String,
+    default: "國文",
+  },
+});
 
 const store = useStore();
 
-//getting chat response type
-const response_type = store.getters["getResponseType"];
+const USER = reactive({
+  action: "Start",
+  subject: props.subject,
+  ...store.getters["user/getUserData"],
+});
 
-//!TEST FUTURE
-TEST_USER.response_type = response_type;
+// USER.subject = subject;
+
+//getting chat response type
+let response_type = store.getters["getResponseType"];
+USER.response_type = response_type;
 
 /**
  * This blok for HomeworkHelper
@@ -160,14 +165,6 @@ const cameraOpened = ref(false);
 //user`s text message
 const textMessage = ref("");
 
-// scroll to bottom of chat-content
-
-const scrollToBottom = () => {
-  const chatElement = document.querySelector(".chat-container");
-  chatElement.scrollTop = chatElement.scrollHeight;
-  // chartRef.value.scrollTop = chartRef.value.scrollHeight;
-};
-
 /**
  * getting image file from input image and send in sendMedia switcher
  * @returns void
@@ -199,6 +196,17 @@ const getRecord = ({ file, audioUrl }) => {
 //starting conversation with ai
 const startConversation = async () => {
   try {
+    if (!TOKEN.value) {
+      await getToken();
+    }
+
+    const UserData = {
+      action: "Start",
+      subject: props.subject,
+      response_type: store.getters["getResponseType"],
+      ...store.getters["user/getUserData"],
+    };
+
     chatMessages.push({
       side: "server",
       title: "伴讀小雲飛",
@@ -209,7 +217,7 @@ const startConversation = async () => {
       time: 0,
     });
 
-    const data = await airpetFetch("start-conversation", TEST_USER, TOKEN.value);
+    const data = await airpetFetch("start-conversation", UserData, TOKEN.value);
 
     CONVERSATION_SESSION_ID.value = data.caller_id;
     chatMessages.at(-1).content = data.response;
@@ -218,7 +226,7 @@ const startConversation = async () => {
 
     storeUserChat(chatMessages.at(-1));
     updateHomeworkAbility(data.caller_id);
-    scrollToBottom();
+    response_type = store.getters["getResponseType"];
   } catch (error) {
     console.log(error);
   }
@@ -236,6 +244,8 @@ const continueConversation = async (data, contentType = "text") => {
       await startConversation();
       return;
     }
+
+    response_type = store.getters["getResponseType"];
 
     let dataToSend = data;
 
@@ -306,7 +316,6 @@ const continueConversation = async (data, contentType = "text") => {
 
     chatMessages.at(-2).content = continueConversation.requested_text;
     storeUserChat(chatMessages.at(-2));
-    scrollToBottom();
   } catch (error) {
     console.log(error);
   }
@@ -328,6 +337,8 @@ const imageTextExplanation = async (data) => {
       time: 0,
     });
 
+    response_type = store.getters["getResponseType"];
+
     const extractText = await airpetFetch("extract-image-text", data, TOKEN.value);
 
     chatMessages.at(-1).content = extractText.extracted_text;
@@ -348,7 +359,7 @@ const imageTextExplanation = async (data) => {
     const explanation = await airpetFetch(
       "text-explaination",
       {
-        subject: TEST_USER.subject,
+        subject: USER.subject,
         text: extractText.extracted_text,
       },
       TOKEN.value,
@@ -405,7 +416,6 @@ const sendInputText = () => {
     input_text: textMessage.value,
   });
   textMessage.value = "";
-  scrollToBottom();
 };
 
 /**
@@ -483,9 +493,11 @@ const getChattingAbilityAndHistory = async () => {
  */
 let page = 1;
 let isAvailableData = true;
+const isNewMessagesLoaded = ref(false);
 const getHistoryOnScroll = async () => {
   try {
     if (!isAvailableData) return;
+    isNewMessagesLoaded.value = false;
 
     page++;
     const { data } = await request.get(`homeworkfn/history?page=${page}`, {
@@ -494,12 +506,15 @@ const getHistoryOnScroll = async () => {
 
     if (!data.data.length) {
       isAvailableData = false;
+      isNewMessagesLoaded.value = true;
       return;
     }
 
     chatMessages.unshift(...data.data);
+    isNewMessagesLoaded.value = true;
   } catch (error) {
     console.log("Get history failed: ", error.message);
+    isNewMessagesLoaded.value = true;
   }
 };
 
@@ -518,25 +533,6 @@ const updateHomeworkAbility = async (aiConversationId = null) => {
     console.log("Update homeworkAbility failed: ", error.message);
   }
 };
-
-watch(
-  () => dataLoaded.value,
-  (n, o) => {
-    if (n) {
-      setTimeout(() => {
-        scrollToBottom();
-      }, 1000);
-    }
-  },
-);
-// watch(
-//   () => chartRef.value,
-//   (n, o) => {
-//     if (n) {
-//       chartRef.value.scrollTo(1000, n);
-//     }
-//   },
-// );
 
 /**
  * getting data on page load
@@ -600,6 +596,33 @@ onMounted(async () => {
   }, 1000);
 });
 
+watch(
+  () => [chattingAbility.value, remainingTime90.value, remainingTimeDay.value],
+  () => {
+    emits("childDataEmit", {
+      component: "hw-helper",
+      data: {
+        chattingAbility: chattingAbility.value,
+        remainingTimeDay: remainingTimeDay.value,
+        remainingTime90: remainingTime90.value,
+      },
+    });
+  },
+);
+
+watch(
+  () => dataLoaded.value,
+  (n) => {
+    if (n) {
+      const { school_name, school_year, student_name } =
+        store.getters["user/getUserData"];
+      USER.school_name = school_name;
+      USER.school_year = school_year;
+      USER.student_name = student_name;
+    }
+  },
+);
+
 onUnmounted(() => {
   clearInterval(remainingInterval);
   updateHomeworkAbility();
@@ -615,13 +638,6 @@ onUnmounted(() => {
   height: inherit;
 }
 
-.hw-remaining {
-  padding: 1px;
-  font-size: 12px;
-
-  margin: 0 auto;
-}
-
 .chat-container,
 .loader-container {
   height: 100%;
@@ -631,6 +647,9 @@ onUnmounted(() => {
 .chat-container {
   overflow: auto;
   scroll-behavior: smooth;
+
+  display: flex;
+  flex-direction: column;
 
   &::-webkit-scrollbar {
     width: 3px;
@@ -670,6 +689,20 @@ onUnmounted(() => {
     margin: 0 8px;
   }
 
+  & .restart {
+    margin-left: 5px;
+    padding: 8px;
+
+    background: var(--blue);
+    color: var(--white);
+
+    outline: none;
+    border: none;
+    border-radius: 20px;
+
+    cursor: pointer;
+  }
+
   // transition: opacity 0.8 ease;
 }
 
@@ -679,14 +712,14 @@ onUnmounted(() => {
 
   width: 100%;
 
-  padding: 8px 75px 8px 20px;
+  padding: 5px 6px 5px 20px;
 
   background: var(--white);
 
   border-radius: 20px;
 
   & input {
-    position: relative;
+    // position: relative;
     width: 100%;
 
     border: none;
@@ -697,7 +730,7 @@ onUnmounted(() => {
   }
 
   & .send-container {
-    position: absolute;
+    // position: absolute;
     display: flex;
     flex-direction: row;
     flex-wrap: nowrap;
@@ -724,14 +757,27 @@ onUnmounted(() => {
   align-items: flex-end;
   gap: 20px;
   margin-bottom: 20px;
+  // max-width: 50%;
 
   font-family: "DFYuanMedium";
 
   & .message-loader,
   .message-content {
     margin: 0 4px;
-    width: 70%;
+    // width: 70%;
   }
+
+  &:has(.message-audio) .message-content {
+    padding: 0;
+
+    .message-audio {
+      display: flex;
+    }
+  }
+}
+
+.user-message {
+  margin-left: auto;
 }
 
 .message-content {
@@ -746,8 +792,23 @@ onUnmounted(() => {
 
   & > p {
     position: relative;
-    font-family: "DFYuanMedium";
+    // font-family: "DFYuanMedium";
     color: #787b7b;
+
+    width: fit-content;
+    // max-width: 80%;
+
+    // @media screen and (min-width: 450px) {
+    //   width: 300px;
+    // }
+
+    // @media screen and (min-width: 500px) {
+    //   width: 350px;
+    // }
+
+    // @media screen and (min-width: 600px) {
+
+    // }
   }
 }
 
@@ -773,14 +834,6 @@ onUnmounted(() => {
     border-bottom: 17px solid #f2f4f7;
     border-right: 27px solid transparent;
   }
-
-  &:has(.message-audio) .message-content {
-    padding: 0;
-
-    .message-audio {
-      display: flex;
-    }
-  }
 }
 
 .server-message {
@@ -804,6 +857,7 @@ onUnmounted(() => {
 .avatar {
   width: 35px;
   height: 35px;
+  padding: 4px;
 
   border-radius: 50%;
 
@@ -818,5 +872,14 @@ onUnmounted(() => {
   opacity: 0.5;
   pointer-events: none;
   // transition: opacity 0.8 ease;
+}
+
+.intersection {
+  width: 100%;
+  height: 20px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 </style>
