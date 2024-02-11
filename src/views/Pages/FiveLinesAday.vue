@@ -244,7 +244,8 @@ onMounted(() => {
     justify-content: space-between;
 
     &-translation-icon {
-      width: 22px;
+      max-width: 22px;
+      width: 100%;
       height: 22px;
       padding: 4px;
       display: flex;
