@@ -243,6 +243,10 @@ onMounted(() => {
     align-items: center;
     justify-content: space-between;
 
+    &-text {
+      max-width: 95%;
+    }
+
     &-translation-icon {
       max-width: 22px;
       width: 100%;
