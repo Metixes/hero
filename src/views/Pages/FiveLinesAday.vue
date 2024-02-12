@@ -343,5 +343,7 @@ onMounted(() => {
   &:disabled {
     background-color: #adadad;
   }
+
+  pointer-events: auto;
 }
 </style>

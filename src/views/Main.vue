@@ -8,19 +8,19 @@
       <Header />
       <div class="tab-header">
         <div>
-         <div>
-           <p class="tab-header-title">{{ tabHeaders.title }}</p>
-           <p class="tab-header-subtitle">{{ tabHeaders.chiTitle }}</p>
-         </div>
+          <div>
+            <p class="tab-header-title">{{ tabHeaders.title }}</p>
+            <p class="tab-header-subtitle">{{ tabHeaders.chiTitle }}</p>
+          </div>
 
-       <a-select
-        v-if="route.path === '/main/homework-helper'"
-        ref="select"
-        v-model:value="selectedSubject"
-        style="width: 150px; margin-left: 10px"
-        :options="subjectList"
-        placeholder="請選擇科目"
-       ></a-select>
+          <a-select
+            v-if="route.path === '/main/homework-helper'"
+            ref="select"
+            v-model:value="selectedSubject"
+            style="width: 150px; margin-left: 10px"
+            :options="subjectList"
+            placeholder="請選擇科目"
+          ></a-select>
         </div>
         <div v-if="showDataPicker" class="history-answers">
           <a-date-picker
@@ -31,8 +31,10 @@
             @change="onSelectDate"
           />
         </div>
-       <div v-if="route.path === '/main/homework-helper'" class="hw-remaining">
-          <p v-if="!childData.chattingAbility">Will be available after: {{ childData.remainingTimeDay }}</p>
+        <div v-if="route.path === '/main/homework-helper'" class="hw-remaining">
+          <p v-if="!childData.chattingAbility">
+            Will be available after: {{ childData.remainingTimeDay }}
+          </p>
           <p v-else>Time left: {{ childData.remainingTime90 }}</p>
         </div>
       </div>
@@ -40,7 +42,11 @@
     <div class="tab-view">
       <router-view v-slot="{ Component }">
         <transition name="scale" mode="out-in">
-          <component :subject="selectedSubject" @childDataEmit="getChildData" :is="Component" />
+          <component
+            :subject="selectedSubject"
+            @childDataEmit="getChildData"
+            :is="Component"
+          />
         </transition>
       </router-view>
     </div>
@@ -123,8 +129,6 @@ watch(
   () => store.state.user.currentDate,
   (n, o) => {
     if (n) {
-      // store.dispatch("user/getTasks", currentDate.value.format("YYYY-MM-DD"));
-
       switch (route.path) {
         case "/main/five-lines-a-day":
         case "/main/story-writer":

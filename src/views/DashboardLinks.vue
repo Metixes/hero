@@ -116,7 +116,7 @@ const redirectToClasses = (event) => {
     &-title {
       position: absolute;
       left: 35%;
-      top: 3%;
+      top: 4%;
       letter-spacing: 0.2rem;
       font-size: 14px;
       color: var(--white);

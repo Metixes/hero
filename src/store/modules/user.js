@@ -82,6 +82,16 @@ export const user = {
           commit("setIsTasksCompletedToday", data.data.completed);
         }
 
+        if (
+          dayjs(state.currentDate).format("YYYY-MM-DD") !==
+          dayjs(new Date()).format("YYYY-MM-DD")
+        ) {
+          notify({
+            title: "Error",
+            text: "This task has already been completed",
+          });
+        }
+
         commit("setUserTasks", data.data.vocabs);
         commit("setUserTaskId", data.data.task_id);
         commit("setUserAnswers", data.data.answers);
@@ -157,8 +167,6 @@ export const user = {
           });
           return;
         }
-
-        console.log(data);
       } catch (error) {
         notify({
           title: "Error",
